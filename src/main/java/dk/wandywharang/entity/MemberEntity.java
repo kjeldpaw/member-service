@@ -14,7 +14,9 @@ public class MemberEntity implements Member {
     @Id
     public UUID id;
 
-    public String name;
+    public String firstName;
+
+    public String lastName;
 
     @Embedded
     public Location location;
@@ -29,9 +31,6 @@ public class MemberEntity implements Member {
 
     public String kukkiWonId;
 
-    @Column(unique = true, nullable = false)
-    public String keycloakId; // the "sub" claim from the JWT
-
     @OneToOne(targetEntity = BeltEntity.class)
     public Belt belt;
 
@@ -41,8 +40,13 @@ public class MemberEntity implements Member {
     }
 
     @Override
-    public String name() {
-        return name;
+    public String firstName() {
+        return firstName;
+    }
+
+    @Override
+    public String lastName() {
+        return lastName;
     }
 
     @Override

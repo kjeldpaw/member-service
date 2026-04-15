@@ -7,7 +7,9 @@ public interface Member {
 
     UUID id();
 
-    String name();
+    String firstName();
+
+    String lastName();
 
     Location location();
 

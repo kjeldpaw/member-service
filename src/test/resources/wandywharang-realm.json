@@ -1,0 +1,60 @@
+{
+  "realm": "wandywharang",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "roles": {
+    "realm": [
+      { "name": "admin",      "description": "Full access to all member management operations" },
+      { "name": "instructor", "description": "Can view members and manage belt graduations" },
+      { "name": "member",     "description": "Basic member access" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "member-service",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "member-service-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "redirectUris": ["http://localhost:8080/*"],
+      "webOrigins": ["http://localhost:8080"]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin@wandywharang.dk",
+      "email": "admin@wandywharang.dk",
+      "firstName": "Admin",
+      "lastName": "WandyWhaRang",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "admin", "temporary": false }],
+      "realmRoles": ["admin"]
+    },
+    {
+      "username": "instructor@wandywharang.dk",
+      "email": "instructor@wandywharang.dk",
+      "firstName": "Test",
+      "lastName": "Instructor",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "instructor", "temporary": false }],
+      "realmRoles": ["instructor"]
+    },
+    {
+      "username": "member@wandywharang.dk",
+      "email": "member@wandywharang.dk",
+      "firstName": "Test",
+      "lastName": "Member",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "member", "temporary": false }],
+      "realmRoles": ["member"]
+    }
+  ]
+}
