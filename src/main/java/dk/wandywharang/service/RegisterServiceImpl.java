@@ -33,6 +33,13 @@ public class RegisterServiceImpl implements RegisterService {
     private Uni<Void> register(UserRepresentation user) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
                     try (final var response = keycloak.realm(realm).users().create(user)) {
+                        if (response.getStatus() == 409) {
+                            throw new AlreadyExistsException();
+                        }
+                        if (response.getStatus() != 201) {
+                            throw new RegisterException(response.getStatus(), response.getStatusInfo().getReasonPhrase());
+                        }
+
                         // Extract the new user's ID from the Location header
                         String location = response.getLocation().getPath();
                         return location.substring(location.lastIndexOf('/') + 1);

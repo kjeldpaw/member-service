@@ -23,4 +23,29 @@ public class RegisterResourceTest {
                 .statusCode(201);
     }
 
+    @Test
+    void testRegisterAlreadyExists() {
+        final var register = new RegisterRecord("Jane", "Doe", "jane.doe@example.com", "password123");
+
+        // First registration
+        given()
+                .contentType(ContentType.JSON)
+                .body(register)
+                .when()
+                .post("/api/v1/register")
+                .then()
+                .statusCode(201);
+
+        // Second registration with same email
+        given()
+                .contentType(ContentType.JSON)
+                .body(register)
+                .when()
+                .post("/api/v1/register")
+                .then()
+                .statusCode(409);
+    }
+
+
+
 }
