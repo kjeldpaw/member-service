@@ -36,7 +36,7 @@ public class MemberResource {
                           MemberMapper memberMapper,
                           Keycloak keycloak,
                           SecurityIdentity securityIdentity,
-                          @ConfigProperty(name = "quarkus.keycloak.admin-client.realm") String realm) {
+                          @ConfigProperty(name = "quarkus.keycloak.admin-client.realm-target", defaultValue = "wandywharang") String realm) {
         this.memberRepository = memberRepository;
         this.memberMapper = memberMapper;
         this.keycloak = keycloak;
@@ -60,13 +60,13 @@ public class MemberResource {
     @Produces(MediaType.APPLICATION_JSON)
     @WithTransaction
     @RolesAllowed("member")
-    public Uni<? extends Member> createMember(MemberRecord memberRecord) {
+    public Uni<MemberRecord> createMember(MemberRecord memberRecord) {
         UserRepresentation user = new UserRepresentation();
         user.setUsername(memberRecord.email());
         user.setEmail(memberRecord.email());
-        user.setFirstName(memberRecord.name());
+        user.setFirstName(memberRecord.firstName());
+        user.setLastName(memberRecord.lastName());
         user.setEnabled(true);
-        user.setCredentials();
 
         return Uni.createFrom().item(() -> {
             try (Response response = keycloak.realm(realm).users().create(user)) {
@@ -76,10 +76,9 @@ public class MemberResource {
                 String location = response.getHeaderString("Location");
                 return location.substring(location.lastIndexOf("/") + 1);
             }
-        }).chain(keycloakId -> {
+        }).flatMap(keycloakId -> {
             MemberEntity entity = memberMapper.toEntity(memberRecord);
             entity.id = UUID.randomUUID();
-            entity.keycloakId = keycloakId;
             return memberRepository.persist(entity).map(memberMapper::toRecord);
         });
     }
