@@ -21,8 +21,9 @@ public class BeltEntity implements Belt {
     public LocalDate graduationDate;
 
     public String graduatedBy;
-
+    
     @OneToOne(targetEntity = BeltEntity.class, fetch = FetchType.LAZY)
+    @JoinColumn(name = "previousBelt_id")
     public BeltEntity previousBelt;
 
     @Override

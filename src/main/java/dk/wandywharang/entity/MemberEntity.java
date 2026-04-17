@@ -32,6 +32,7 @@ public class MemberEntity implements Member {
     public String kukkiWonId;
 
     @OneToOne(targetEntity = BeltEntity.class)
+    @JoinColumn(name = "belt_id")
     public Belt belt;
 
     @Override

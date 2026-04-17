@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.5.xsd">
+
+    <changeSet id="1.0.0" author="junie">
+        <createTable tableName="belts">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="type" type="VARCHAR(255)"/>
+            <column name="graduationDate" type="DATE"/>
+            <column name="graduatedBy" type="VARCHAR(255)"/>
+            <column name="previousBelt_id" type="UUID"/>
+        </createTable>
+
+        <createTable tableName="clubs">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)"/>
+            <column name="address" type="VARCHAR(255)"/>
+            <column name="city" type="VARCHAR(255)"/>
+            <column name="zipCode" type="VARCHAR(255)"/>
+        </createTable>
+
+        <createTable tableName="members">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="firstName" type="VARCHAR(255)"/>
+            <column name="lastName" type="VARCHAR(255)"/>
+            <column name="address" type="VARCHAR(255)"/>
+            <column name="city" type="VARCHAR(255)"/>
+            <column name="zipCode" type="VARCHAR(255)"/>
+            <column name="phone" type="VARCHAR(255)"/>
+            <column name="email" type="VARCHAR(255)"/>
+            <column name="dateOfBirth" type="DATE"/>
+            <column name="wandyWhaRangId" type="VARCHAR(255)"/>
+            <column name="kukkiWonId" type="VARCHAR(255)"/>
+            <column name="belt_id" type="UUID"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseColumnNames="previousBelt_id"
+                                 baseTableName="belts"
+                                 constraintName="fk_belts_previous_belt"
+                                 referencedColumnNames="id"
+                                 referencedTableName="belts"/>
+
+        <addForeignKeyConstraint baseColumnNames="belt_id"
+                                 baseTableName="members"
+                                 constraintName="fk_members_belt"
+                                 referencedColumnNames="id"
+                                 referencedTableName="belts"/>
+    </changeSet>
+
+</databaseChangeLog>
