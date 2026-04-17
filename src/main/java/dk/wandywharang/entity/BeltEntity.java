@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.UUID;
 
 @Entity
 @Table(name = "belts")
@@ -13,7 +14,7 @@ public class BeltEntity implements Belt {
 
     @Id
     @GeneratedValue
-    public Long id;
+    public UUID id;
 
     public BeltType type;
 

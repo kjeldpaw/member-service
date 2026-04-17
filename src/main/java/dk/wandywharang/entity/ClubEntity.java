@@ -7,13 +7,15 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import java.util.UUID;
+
 @Entity
 @Table(name = "clubs")
 public class ClubEntity implements Club {
 
     @Id
     @GeneratedValue
-    public Long id;
+    public UUID id;
 
     public String name;
 
