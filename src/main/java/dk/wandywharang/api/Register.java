@@ -1,12 +1,9 @@
 package dk.wandywharang.api;
 
-public interface Register {
+public interface Register extends WithCredentials {
 
-    String firstName();
+    String getFirstName();
 
-    String lastName();
+    String getLastName();
 
-    String email();
-
-    String password();
 }

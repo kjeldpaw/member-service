@@ -1,6 +1,6 @@
 package dk.wandywharang;
 
-import dk.wandywharang.api.RegisterRecord;
+import dk.wandywharang.api.record.RegisterRecord;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;

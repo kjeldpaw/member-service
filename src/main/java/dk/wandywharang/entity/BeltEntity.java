@@ -1,11 +1,9 @@
 package dk.wandywharang.entity;
 
 import dk.wandywharang.api.Belt;
-import dk.wandywharang.api.BeltType;
 import jakarta.persistence.*;
 
-import java.time.LocalDate;
-import java.util.Optional;
+import java.time.Duration;
 import java.util.UUID;
 
 @Entity
@@ -14,36 +12,52 @@ public class BeltEntity implements Belt {
 
     @Id
     @GeneratedValue
-    public UUID id;
+    private UUID id;
+    @Column(nullable = false)
+    private String name;
+    @Column(name = "wait_time", nullable = false)
+    private Duration waitTime;
+    @Column(nullable = false)
+    private Integer rank;
 
-    public BeltType type;
+    public BeltEntity() {
+    }
 
-    public LocalDate graduationDate;
-
-    public String graduatedBy;
-    
-    @OneToOne(targetEntity = BeltEntity.class, fetch = FetchType.LAZY)
-    @JoinColumn(name = "previousBelt_id")
-    public BeltEntity previousBelt;
-
-    @Override
-    @Enumerated(EnumType.STRING)
-    public BeltType type() {
-        return type;
+    public BeltEntity(String name, Duration waitTime, Integer rank) {
+        this.name = name;
+        this.waitTime = waitTime;
+        this.rank = rank;
     }
 
     @Override
-    public LocalDate graduationDate() {
-        return graduationDate;
+    public UUID getId() {
+        return id;
     }
 
     @Override
-    public String graduatedBy() {
-        return graduatedBy;
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     @Override
-    public Optional<Belt> previousBelt() {
-        return Optional.ofNullable(previousBelt);
+    public Duration getWaitTime() {
+        return waitTime;
+    }
+
+    public void setWaitTime(Duration waitTime) {
+        this.waitTime = waitTime;
+    }
+
+    @Override
+    public Integer getRank() {
+        return rank;
+    }
+
+    public void setRank(Integer rank) {
+        this.rank = rank;
     }
 }

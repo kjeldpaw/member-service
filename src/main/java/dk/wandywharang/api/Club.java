@@ -1,8 +1,12 @@
 package dk.wandywharang.api;
 
+import java.util.UUID;
+
 public interface Club {
 
-    String name();
+    UUID getId();
 
-    Location location();
+    String getName();
+
+    Address getAddress();
 }

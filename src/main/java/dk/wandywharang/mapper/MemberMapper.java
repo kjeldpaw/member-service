@@ -1,15 +1,14 @@
 package dk.wandywharang.mapper;
 
-import dk.wandywharang.api.MemberRecord;
+import dk.wandywharang.api.Member;
+import dk.wandywharang.api.record.MemberRecord;
 import dk.wandywharang.entity.MemberEntity;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "cdi")
 public interface MemberMapper {
 
     MemberRecord toRecord(MemberEntity member);
 
-    @Mapping(target = "id", ignore = true)
-    MemberEntity toEntity(MemberRecord record);
+    MemberEntity toEntity(Member member);
 }

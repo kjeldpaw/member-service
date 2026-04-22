@@ -1,28 +1,31 @@
 package dk.wandywharang.api;
 
 import java.time.LocalDate;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 public interface Member {
 
-    UUID id();
+    UUID getId();
 
-    String firstName();
+    String getFirstName();
 
-    String lastName();
+    String getLastName();
 
-    Location location();
+    Address getAddress();
 
-    String phone();
+    String getPhone();
 
-    String email();
+    String getEmail();
 
-    LocalDate dateOfBirth();
+    LocalDate getDateOfBirth();
 
-    String wandyWhaRangId();
+    Club getClub();
 
-    String kukkiWonId();
+    Optional<? extends Graduation> getGraduation();
 
-    Belt belt();
+    Set<? extends Reference> getReferences();
+
 }
 

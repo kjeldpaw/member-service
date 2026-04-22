@@ -1,42 +1,13 @@
-package dk.wandywharang.entity;
+package dk.wandywharang.api.record;
 
 import dk.wandywharang.api.*;
-import jakarta.persistence.*;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-@Entity
-@Table(name = "members")
-public class MemberEntity implements Member {
-
-    @Id
-    private UUID id;
-    @Column(name = "first_name", nullable = false)
-    private String firstName;
-    @Column(name = "last_name", nullable = false)
-    private String lastName;
-    @Embedded
-    private Address address;
-    @Column(nullable = false)
-    private String phone;
-    @Column(nullable = false)
-    private String email;
-    @Column(name= "date_of_birth", nullable = false)
-    private LocalDate dateOfBirth;
-    @OneToOne
-    @JoinColumn(name = "club_id", nullable = false)
-    public ClubEntity club;
-    @OneToOne
-    @JoinColumn(name = "graduation_id")
-    public GraduationEntity graduation;
-    @OneToMany(mappedBy = "member")
-    private Set<ReferenceEntity> references;
-
-
+public record MemberRecord(UUID id, String firstName, String lastName, Address address, String phone, String email, LocalDate dateOfBirth, Club club, Graduation graduation, Set<Reference> references) implements Member {
 
     @Override
     public UUID getId() {

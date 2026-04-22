@@ -1,11 +1,7 @@
 package dk.wandywharang.entity;
 
 import dk.wandywharang.api.Club;
-import jakarta.persistence.Embedded;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 import java.util.UUID;
 
@@ -15,20 +11,36 @@ public class ClubEntity implements Club {
 
     @Id
     @GeneratedValue
-    public UUID id;
-
-    public String name;
-
+    private UUID id;
+    @Column(unique = true, nullable = false)
+    private String name;
     @Embedded
-    public Location location;
+    public Address address;
 
-    @Override
-    public String name() {
-        return name;
+    public ClubEntity(String name, Address address) {
+        this.name = name;
+        this.address = address;
+    }
+
+    public ClubEntity() {
     }
 
     @Override
-    public Location location() {
-        return location;
+    public UUID getId() {
+        return id;
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    public void setAddress(Address address) {
+        this.address = address;
+    }
+
+    @Override
+    public dk.wandywharang.api.Address getAddress() {
+        return address;
     }
 }

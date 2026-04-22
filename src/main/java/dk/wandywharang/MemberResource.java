@@ -1,15 +1,16 @@
 package dk.wandywharang;
 
-import dk.wandywharang.api.Member;
-import dk.wandywharang.api.MemberRecord;
+import dk.wandywharang.api.record.MemberRecord;
 import dk.wandywharang.entity.MemberEntity;
 import dk.wandywharang.mapper.MemberMapper;
 import dk.wandywharang.repository.MemberRepository;
+import dk.wandywharang.service.MemberService;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.RequestScoped;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -24,30 +25,33 @@ import org.keycloak.representations.idm.UserRepresentation;
 import java.util.UUID;
 
 @Path("/api/v1/members")
+@RequestScoped
 public class MemberResource {
+    private final MemberService memberService;
+    private final SecurityIdentity securityIdentity;
     private final MemberRepository memberRepository;
     private final MemberMapper memberMapper;
+
+    @ConfigProperty(name = "quarkus.keycloak.admin-client.realm")
+    String realm;
+
     private final Keycloak keycloak;
-    private final SecurityIdentity securityIdentity;
-    private final String realm;
 
-
-    public MemberResource(MemberRepository memberRepository,
-                          MemberMapper memberMapper,
-                          Keycloak keycloak,
-                          SecurityIdentity securityIdentity,
-                          @ConfigProperty(name = "quarkus.keycloak.admin-client.realm-target", defaultValue = "wandywharang") String realm) {
+    public MemberResource(MemberService memberService, SecurityIdentity securityIdentity, MemberRepository memberRepository, MemberMapper memberMapper, Keycloak keycloak) {
+        this.memberService = memberService;
+        this.securityIdentity = securityIdentity;
         this.memberRepository = memberRepository;
         this.memberMapper = memberMapper;
         this.keycloak = keycloak;
-        this.securityIdentity = securityIdentity;
-        this.realm = realm;
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed("member")
-    public Multi<? extends Member> members() {
+    public Multi<MemberRecord> members() {
+
+
+
         return memberRepository.findAll().list()
                 .onItem().transformToMulti(members -> Multi.createFrom().items(members.stream()))
                 .onItem().transform(memberMapper::toRecord);

@@ -54,6 +54,29 @@
                                  constraintName="fk_members_belt"
                                  referencedColumnNames="id"
                                  referencedTableName="belts"/>
+
+        <createTable tableName="members_clubs">
+            <column name="member_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="club_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="members_clubs" columnNames="member_id, club_id" constraintName="pk_members_clubs"/>
+
+        <addForeignKeyConstraint baseColumnNames="member_id"
+                                 baseTableName="members_clubs"
+                                 constraintName="fk_members_clubs_member"
+                                 referencedColumnNames="id"
+                                 referencedTableName="members"/>
+
+        <addForeignKeyConstraint baseColumnNames="club_id"
+                                 baseTableName="members_clubs"
+                                 constraintName="fk_members_clubs_club"
+                                 referencedColumnNames="id"
+                                 referencedTableName="clubs"/>
     </changeSet>
 
 </databaseChangeLog>

@@ -1,15 +1,15 @@
 package dk.wandywharang.api;
 
-import java.time.LocalDate;
-import java.util.Optional;
+import java.time.Duration;
+import java.util.UUID;
 
 public interface Belt {
 
-    BeltType type();
+    UUID getId();
 
-    LocalDate graduationDate();
+    String getName();
 
-    String graduatedBy();
+    Duration getWaitTime();
 
-    Optional<Belt> previousBelt();
+    Integer getRank();
 }
