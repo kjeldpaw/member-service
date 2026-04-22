@@ -1,11 +1,13 @@
 package dk.wandywharang.api;
 
+import java.util.Optional;
+
 public interface Address {
 
-    String getStreet();
+    Optional<String> getStreet();
 
-    String getCity();
+    Optional<String> getCity();
 
-    String getZipCode();
+    Optional<String> getZipCode();
 
 }

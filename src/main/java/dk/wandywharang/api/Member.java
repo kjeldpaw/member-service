@@ -14,11 +14,11 @@ public interface Member {
 
     Address getAddress();
 
-    String getPhone();
+    Optional<String> getPhone();
 
     String getEmail();
 
-    LocalDate getDateOfBirth();
+    Optional<LocalDate> getDateOfBirth();
 
     Club getClub();
 

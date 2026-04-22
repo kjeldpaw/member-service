@@ -6,6 +6,7 @@ import dk.wandywharang.entity.GraduationEntity;
 import dk.wandywharang.entity.MemberEntity;
 import org.mapstruct.Mapper;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 @Mapper(componentModel = "cdi")
@@ -21,5 +22,13 @@ public interface MemberMapper {
 
     default GraduationEntity mapToEntity(Optional<? extends Graduation> value) {
         return (GraduationEntity) value.orElse(null);
+    }
+
+    default String mapString(Optional<String> value) {
+        return value.orElse(null);
+    }
+
+    default LocalDate mapLocalDate(Optional<LocalDate> value) {
+        return value.orElse(null);
     }
 }

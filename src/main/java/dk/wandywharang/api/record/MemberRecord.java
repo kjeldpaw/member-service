@@ -29,8 +29,8 @@ public record MemberRecord(String id, String firstName, String lastName, Address
     }
 
     @Override
-    public String getPhone() {
-        return phone;
+    public Optional<String> getPhone() {
+        return Optional.ofNullable(phone);
     }
 
     @Override
@@ -39,8 +39,8 @@ public record MemberRecord(String id, String firstName, String lastName, Address
     }
 
     @Override
-    public LocalDate getDateOfBirth() {
-        return dateOfBirth;
+    public Optional<LocalDate> getDateOfBirth() {
+        return Optional.ofNullable(dateOfBirth);
     }
 
     @Override

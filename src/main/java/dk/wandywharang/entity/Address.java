@@ -3,14 +3,14 @@ package dk.wandywharang.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 
+import java.util.Optional;
+
 @Embeddable
 public class Address implements dk.wandywharang.api.Address {
 
-    @Column(nullable = false)
     private String street;
-    @Column(nullable = false)
     private String city;
-    @Column(name = "zip_code", nullable = false)
+    @Column(name = "zip_code")
     private String zipCode;
 
     public Address() {
@@ -23,8 +23,8 @@ public class Address implements dk.wandywharang.api.Address {
     }
 
     @Override
-    public String getStreet() {
-        return street;
+    public Optional<String> getStreet() {
+        return Optional.ofNullable(street);
     }
 
     public void setStreet(String street) {
@@ -32,8 +32,8 @@ public class Address implements dk.wandywharang.api.Address {
     }
 
     @Override
-    public String getCity() {
-        return city;
+    public Optional<String> getCity() {
+        return Optional.ofNullable(city);
     }
 
     public void setCity(String city) {
@@ -41,8 +41,8 @@ public class Address implements dk.wandywharang.api.Address {
     }
 
     @Override
-    public String getZipCode() {
-        return zipCode;
+    public Optional<String> getZipCode() {
+        return Optional.ofNullable(zipCode);
     }
 
     public void setZipCode(String zipCode) {

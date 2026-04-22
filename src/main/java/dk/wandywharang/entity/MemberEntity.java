@@ -23,11 +23,10 @@ public class MemberEntity implements Member {
     private String lastName;
     @Embedded
     private Address address;
-    @Column(nullable = false)
     private String phone;
     @Column(nullable = false)
     private String email;
-    @Column(name= "date_of_birth", nullable = false)
+    @Column(name= "date_of_birth")
     private LocalDate dateOfBirth;
     @OneToOne
     @JoinColumn(name = "club_id", nullable = false)
@@ -90,8 +89,8 @@ public class MemberEntity implements Member {
     }
 
     @Override
-    public String getPhone() {
-        return phone;
+    public Optional<String> getPhone() {
+        return Optional.ofNullable(phone);
     }
 
     public void setPhone(String phone) {
@@ -108,8 +107,8 @@ public class MemberEntity implements Member {
     }
 
     @Override
-    public LocalDate getDateOfBirth() {
-        return dateOfBirth;
+    public Optional<LocalDate> getDateOfBirth() {
+        return Optional.ofNullable(dateOfBirth);
     }
 
     public void setDateOfBirth(LocalDate dateOfBirth) {
