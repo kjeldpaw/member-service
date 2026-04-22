@@ -3,11 +3,10 @@ package dk.wandywharang.api;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 
 public interface Member {
 
-    UUID getId();
+    String getId();
 
     String getFirstName();
 

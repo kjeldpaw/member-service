@@ -10,61 +10,146 @@
             <column name="id" type="UUID">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="type" type="VARCHAR(255)"/>
-            <column name="graduationDate" type="DATE"/>
-            <column name="graduatedBy" type="VARCHAR(255)"/>
-            <column name="previousBelt_id" type="UUID"/>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="wait_time" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rank" type="INT">
+                <constraints nullable="false"/>
+            </column>
         </createTable>
 
         <createTable tableName="clubs">
             <column name="id" type="UUID">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="name" type="VARCHAR(255)"/>
-            <column name="address" type="VARCHAR(255)"/>
-            <column name="city" type="VARCHAR(255)"/>
-            <column name="zipCode" type="VARCHAR(255)"/>
+            <column name="name" type="VARCHAR(255)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="street" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="city" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="zip_code" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
         </createTable>
 
-        <createTable tableName="members">
+        <createTable tableName="graduations">
             <column name="id" type="UUID">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="firstName" type="VARCHAR(255)"/>
-            <column name="lastName" type="VARCHAR(255)"/>
-            <column name="address" type="VARCHAR(255)"/>
-            <column name="city" type="VARCHAR(255)"/>
-            <column name="zipCode" type="VARCHAR(255)"/>
-            <column name="phone" type="VARCHAR(255)"/>
-            <column name="email" type="VARCHAR(255)"/>
-            <column name="dateOfBirth" type="DATE"/>
-            <column name="wandyWhaRangId" type="VARCHAR(255)"/>
-            <column name="kukkiWonId" type="VARCHAR(255)"/>
-            <column name="belt_id" type="UUID"/>
+            <column name="date" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="belt_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="graduation_id" type="UUID"/>
         </createTable>
 
-        <addForeignKeyConstraint baseColumnNames="previousBelt_id"
-                                 baseTableName="belts"
-                                 constraintName="fk_belts_previous_belt"
-                                 referencedColumnNames="id"
-                                 referencedTableName="belts"/>
+        <createTable tableName="members">
+            <column name="id" type="VARCHAR(50)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="first_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="street" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="city" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="zip_code" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="phone" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_of_birth" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="club_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="graduation_id" type="UUID"/>
+        </createTable>
 
-        <addForeignKeyConstraint baseColumnNames="belt_id"
-                                 baseTableName="members"
-                                 constraintName="fk_members_belt"
-                                 referencedColumnNames="id"
-                                 referencedTableName="belts"/>
+        <createTable tableName="references">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="type" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reference" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="member_id" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
 
         <createTable tableName="members_clubs">
-            <column name="member_id" type="UUID">
+            <column name="member_id" type="VARCHAR(50)">
                 <constraints nullable="false"/>
             </column>
             <column name="club_id" type="UUID">
                 <constraints nullable="false"/>
             </column>
         </createTable>
-
         <addPrimaryKey tableName="members_clubs" columnNames="member_id, club_id" constraintName="pk_members_clubs"/>
+
+        <createTable tableName="graduation_members">
+            <column name="graduation_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="member_id" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="graduation_members" columnNames="graduation_id, member_id" constraintName="pk_graduation_members"/>
+
+        <addForeignKeyConstraint baseColumnNames="belt_id"
+                                 baseTableName="graduations"
+                                 constraintName="fk_graduations_belt"
+                                 referencedColumnNames="id"
+                                 referencedTableName="belts"/>
+
+        <addForeignKeyConstraint baseColumnNames="graduation_id"
+                                 baseTableName="graduations"
+                                 constraintName="fk_graduations_previous"
+                                 referencedColumnNames="id"
+                                 referencedTableName="graduations"/>
+
+        <addForeignKeyConstraint baseColumnNames="club_id"
+                                 baseTableName="members"
+                                 constraintName="fk_members_club"
+                                 referencedColumnNames="id"
+                                 referencedTableName="clubs"/>
+
+        <addForeignKeyConstraint baseColumnNames="graduation_id"
+                                 baseTableName="members"
+                                 constraintName="fk_members_graduation"
+                                 referencedColumnNames="id"
+                                 referencedTableName="graduations"/>
+
+        <addForeignKeyConstraint baseColumnNames="member_id"
+                                 baseTableName="references"
+                                 constraintName="fk_references_member"
+                                 referencedColumnNames="id"
+                                 referencedTableName="members"/>
 
         <addForeignKeyConstraint baseColumnNames="member_id"
                                  baseTableName="members_clubs"
@@ -77,6 +162,18 @@
                                  constraintName="fk_members_clubs_club"
                                  referencedColumnNames="id"
                                  referencedTableName="clubs"/>
+
+        <addForeignKeyConstraint baseColumnNames="graduation_id"
+                                 baseTableName="graduation_members"
+                                 constraintName="fk_grad_mem_graduation"
+                                 referencedColumnNames="id"
+                                 referencedTableName="graduations"/>
+
+        <addForeignKeyConstraint baseColumnNames="member_id"
+                                 baseTableName="graduation_members"
+                                 constraintName="fk_grad_mem_member"
+                                 referencedColumnNames="id"
+                                 referencedTableName="members"/>
     </changeSet>
 
 </databaseChangeLog>

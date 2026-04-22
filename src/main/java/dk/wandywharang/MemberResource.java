@@ -66,10 +66,10 @@ public class MemberResource {
     @RolesAllowed("member")
     public Uni<MemberRecord> createMember(MemberRecord memberRecord) {
         UserRepresentation user = new UserRepresentation();
-        user.setUsername(memberRecord.email());
-        user.setEmail(memberRecord.email());
-        user.setFirstName(memberRecord.firstName());
-        user.setLastName(memberRecord.lastName());
+        user.setUsername(memberRecord.getEmail());
+        user.setEmail(memberRecord.getEmail());
+        user.setFirstName(memberRecord.getFirstName());
+        user.setLastName(memberRecord.getLastName());
         user.setEnabled(true);
 
         return Uni.createFrom().item(() -> {
@@ -82,7 +82,7 @@ public class MemberResource {
             }
         }).flatMap(keycloakId -> {
             MemberEntity entity = memberMapper.toEntity(memberRecord);
-            entity.id = UUID.randomUUID();
+            entity.setId(keycloakId);
             return memberRepository.persist(entity).map(memberMapper::toRecord);
         });
     }

@@ -5,12 +5,11 @@ import dk.wandywharang.api.*;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 
-public record MemberRecord(UUID id, String firstName, String lastName, Address address, String phone, String email, LocalDate dateOfBirth, Club club, Graduation graduation, Set<Reference> references) implements Member {
+public record MemberRecord(String id, String firstName, String lastName, Address address, String phone, String email, LocalDate dateOfBirth, Club club, Graduation graduation, Set<Reference> references) implements Member {
 
     @Override
-    public UUID getId() {
+    public String getId() {
         return id;
     }
 

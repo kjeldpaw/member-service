@@ -63,14 +63,14 @@ public class RegisterServiceImpl implements RegisterService {
     private UserRepresentation build(Register register) {
         final var credential = new CredentialRepresentation();
         credential.setType(CredentialRepresentation.PASSWORD);
-        credential.setValue(register.password());
+        credential.setValue(register.getPassword());
         credential.setTemporary(false);
 
         final var user = new UserRepresentation();
-        user.setUsername(register.email());
-        user.setEmail(register.email());
-        user.setFirstName(register.firstName());
-        user.setLastName(register.lastName());
+        user.setUsername(register.getEmail());
+        user.setEmail(register.getEmail());
+        user.setFirstName(register.getFirstName());
+        user.setLastName(register.getLastName());
         user.setEnabled(true);
         user.setEmailVerified(false);
         user.setCredentials(List.of(credential));
