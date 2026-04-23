@@ -3,7 +3,6 @@ package dk.wandywharang;
 import dk.wandywharang.api.record.BeltRecord;
 import dk.wandywharang.mapper.BeltMapper;
 import dk.wandywharang.service.BeltService;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
@@ -12,6 +11,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.ResponseStatus;
 
+import java.util.List;
 import java.util.UUID;
 
 @Path("/api/v1/belts")
@@ -29,9 +29,9 @@ public class BeltResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed("member")
-    public Multi<BeltRecord> findAll() {
+    public Uni<List<BeltRecord>> findAll() {
         return beltService.findAll()
-                .map(beltMapper::toRecord);
+                .map(list -> list.stream().map(beltMapper::toRecord).toList());
     }
 
     @GET

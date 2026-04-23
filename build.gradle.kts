@@ -27,7 +27,8 @@ dependencies {
     implementation("io.quarkus:quarkus-keycloak-admin-rest-client")
     implementation("org.mapstruct:mapstruct:1.6.3")
     annotationProcessor("org.mapstruct:mapstruct-processor:1.6.3")
-    testImplementation("io.quarkus:quarkus-junit")
+    testImplementation("io.quarkus:quarkus-junit5")
+    testImplementation("io.quarkus:quarkus-test-security")
     testImplementation("io.rest-assured:rest-assured")
 }
 

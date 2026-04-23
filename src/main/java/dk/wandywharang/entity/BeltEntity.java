@@ -1,6 +1,7 @@
 package dk.wandywharang.entity;
 
 import dk.wandywharang.api.Belt;
+import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
 import jakarta.persistence.*;
 
 import java.time.Duration;
@@ -8,7 +9,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "belts")
-public class BeltEntity implements Belt {
+public class BeltEntity extends PanacheEntityBase implements Belt {
 
     @Id
     @GeneratedValue
