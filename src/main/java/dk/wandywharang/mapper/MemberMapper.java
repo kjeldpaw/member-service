@@ -9,6 +9,7 @@ import org.mapstruct.Mapper;
 import java.time.LocalDate;
 import java.util.Optional;
 
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 @Mapper(componentModel = "cdi")
 public interface MemberMapper {
 
