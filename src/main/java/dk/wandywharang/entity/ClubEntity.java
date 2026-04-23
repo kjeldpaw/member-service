@@ -35,12 +35,16 @@ public class ClubEntity implements Club {
         return name;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public void setAddress(Address address) {
         this.address = address;
     }
 
     @Override
-    public dk.wandywharang.api.Address getAddress() {
+    public dk.wandywharang.entity.Address getAddress() {
         return address;
     }
 }

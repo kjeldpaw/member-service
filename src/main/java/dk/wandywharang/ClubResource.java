@@ -1,8 +1,11 @@
 package dk.wandywharang;
 
 import dk.wandywharang.api.record.BeltRecord;
+import dk.wandywharang.api.record.ClubRecord;
 import dk.wandywharang.mapper.BeltMapper;
+import dk.wandywharang.mapper.ClubMapper;
 import dk.wandywharang.service.belt.BeltService;
+import dk.wandywharang.service.club.ClubService;
 import io.smallrye.mutiny.Uni;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
@@ -14,14 +17,14 @@ import org.jboss.resteasy.reactive.ResponseStatus;
 import java.util.List;
 import java.util.UUID;
 
-@Path("/api/v1/belts")
+@Path("/api/v1/clubs")
 @RequestScoped
-public class BeltResource {
-    private final BeltService service;
-    private final BeltMapper mapper;
+public class ClubResource {
+    private final ClubService service;
+    private final ClubMapper mapper;
 
-    public BeltResource(BeltService service,
-                        BeltMapper mapper) {
+    public ClubResource(ClubService service,
+                        ClubMapper mapper) {
         this.service = service;
         this.mapper = mapper;
     }
@@ -29,7 +32,7 @@ public class BeltResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed("member")
-    public Uni<List<BeltRecord>> findAll() {
+    public Uni<List<ClubRecord>> findAll() {
         return service.findAll()
                 .map(list -> list.stream().map(mapper::toRecord).toList());
     }
@@ -38,7 +41,7 @@ public class BeltResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{id}")
     @RolesAllowed("member")
-    public Uni<BeltRecord> findById(@PathParam("id") UUID id) {
+    public Uni<ClubRecord> findById(@PathParam("id") UUID id) {
         return service.findById(id)
                 .map(mapper::toRecord);
     }
@@ -48,8 +51,8 @@ public class BeltResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @RolesAllowed("admin")
     @ResponseStatus(201)
-    public Uni<BeltRecord> create(@Valid BeltRecord belt) {
-        return service.create(belt)
+    public Uni<ClubRecord> create(@Valid ClubRecord club) {
+        return service.create(club)
                 .map(mapper::toRecord);
     }
 
@@ -66,11 +69,11 @@ public class BeltResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Path("/{id}")
     @RolesAllowed("admin")
-    public Uni<Void> update(@PathParam("id") UUID id, @Valid BeltRecord belt) {
-        if (id.equals(belt.getId())) {
-            return service.update(id, belt);
+    public Uni<Void> update(@PathParam("id") UUID id, @Valid ClubRecord club) {
+        if (id.equals(club.getId())) {
+            return service.update(id, club);
         } else {
-            return Uni.createFrom().failure(new BadRequestException("Belt id does not match path parameter"));
+            return Uni.createFrom().failure(new BadRequestException("Club id does not match path parameter"));
         }
     }
 }

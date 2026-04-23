@@ -1,7 +1,7 @@
 package dk.wandywharang;
 
 import dk.wandywharang.api.record.RegisterRecord;
-import dk.wandywharang.service.RegisterService;
+import dk.wandywharang.service.register.RegisterService;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.ws.rs.Consumes;

@@ -1,4 +1,4 @@
-package dk.wandywharang.service;
+package dk.wandywharang.service.belt;
 
 import dk.wandywharang.api.Belt;
 import io.smallrye.mutiny.Uni;

@@ -1,9 +1,11 @@
 package dk.wandywharang.repository;
 
 import dk.wandywharang.entity.ClubEntity;
-import io.quarkus.hibernate.reactive.panache.PanacheRepository;
+import io.quarkus.hibernate.reactive.panache.PanacheRepositoryBase;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import java.util.UUID;
+
 @ApplicationScoped
-public class ClubRepository implements PanacheRepository<ClubEntity> {
+public class ClubRepository implements PanacheRepositoryBase<ClubEntity, UUID> {
 }

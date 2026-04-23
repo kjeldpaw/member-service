@@ -1,4 +1,4 @@
-package dk.wandywharang.service;
+package dk.wandywharang.service.belt;
 
 import dk.wandywharang.api.Belt;
 import dk.wandywharang.mapper.BeltMapper;
@@ -14,12 +14,12 @@ import java.util.UUID;
 @ApplicationScoped
 public class BeltServiceImpl implements BeltService {
     private final BeltRepository repository;
-    private final BeltMapper beltMapper;
+    private final BeltMapper mapper;
 
-    public BeltServiceImpl(BeltRepository beltRepository,
-                           BeltMapper beltMapper) {
-        this.repository = beltRepository;
-        this.beltMapper = beltMapper;
+    public BeltServiceImpl(BeltRepository repository,
+                           BeltMapper mapper) {
+        this.repository = repository;
+        this.mapper = mapper;
     }
 
     @Override
@@ -38,7 +38,7 @@ public class BeltServiceImpl implements BeltService {
     @Override
     @WithTransaction
     public Uni<? extends Belt> create(Belt belt) {
-        return repository.persist(beltMapper.toEntity(belt));
+        return repository.persist(mapper.toEntity(belt));
     }
 
     @Override
@@ -52,7 +52,7 @@ public class BeltServiceImpl implements BeltService {
     @WithTransaction
     public Uni<Void> update(UUID id, Belt belt) {
         return repository.findById(id)
-                .map(beltEntity -> beltMapper.updateEntity(belt, beltEntity))
+                .map(entity -> mapper.updateEntity(belt, entity))
                 .chain(_ -> Uni.createFrom().voidItem());
     }
 }
