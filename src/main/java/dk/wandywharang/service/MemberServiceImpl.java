@@ -1,6 +1,5 @@
 package dk.wandywharang.service;
 
-import dk.wandywharang.api.Club;
 import dk.wandywharang.api.CreateMemberRequest;
 import dk.wandywharang.api.Member;
 import dk.wandywharang.api.UpdateMemberRequest;
@@ -9,20 +8,16 @@ import dk.wandywharang.entity.MemberEntity;
 import dk.wandywharang.mapper.MemberMapper;
 import dk.wandywharang.repository.ClubRepository;
 import dk.wandywharang.repository.MemberRepository;
-import dk.wandywharang.service.register.RegisterService;
-import io.quarkus.hibernate.reactive.panache.Panache;
 import io.quarkus.hibernate.reactive.panache.common.WithSession;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.ws.rs.NotAllowedException;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
-import org.jboss.logging.Logger;
 
 import java.util.List;
 import java.util.UUID;

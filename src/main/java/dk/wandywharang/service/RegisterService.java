@@ -1,4 +1,4 @@
-package dk.wandywharang.service.register;
+package dk.wandywharang.service;
 
 import dk.wandywharang.api.CreateMemberRequest;
 import io.smallrye.mutiny.Uni;

@@ -1,4 +1,4 @@
-package dk.wandywharang.service.register;
+package dk.wandywharang.service;
 
 import jakarta.ws.rs.WebApplicationException;
 

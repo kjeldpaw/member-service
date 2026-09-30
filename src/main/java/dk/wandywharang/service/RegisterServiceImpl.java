@@ -1,4 +1,4 @@
-package dk.wandywharang.service.register;
+package dk.wandywharang.service;
 
 import dk.wandywharang.api.CreateMemberRequest;
 import io.smallrye.mutiny.Uni;
@@ -8,7 +8,6 @@ import io.vertx.core.Vertx;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.extern.jbosslog.JBossLog;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.UserRepresentation;
