@@ -1,18 +1,15 @@
 package dk.wandywharang.service.member;
 
-import dk.wandywharang.api.*;
+import dk.wandywharang.api.Club;
+import dk.wandywharang.api.CreateMemberRequest;
+import dk.wandywharang.api.Member;
 import dk.wandywharang.mapper.MemberMapper;
 import dk.wandywharang.repository.ClubRepository;
 import dk.wandywharang.repository.MemberRepository;
 import dk.wandywharang.service.register.RegisterService;
 import io.quarkus.hibernate.reactive.panache.Panache;
-import io.quarkus.hibernate.reactive.panache.common.WithSession;
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
-import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.unchecked.Unchecked;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.ws.rs.NotAllowedException;
 import jakarta.ws.rs.NotFoundException;
 import org.jboss.logging.Logger;
 
@@ -71,7 +68,7 @@ public class MemberServiceImpl implements MemberService {
         return Panache.withTransaction(() -> clubRepository.findById(request.clubId())
                 .onItem().ifNull().failWith(() -> new NotFoundException(String.format("Club with id = %s not found", request.clubId())))
                 .chain(club -> {
-                    final var entity = mapper.toEntity(request);
+                    final var entity = mapper.map(request);
                     entity.setId(id);
                     entity.setClub(club);
                     return repository.persist(entity);

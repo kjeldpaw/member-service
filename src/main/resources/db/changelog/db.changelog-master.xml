@@ -47,7 +47,7 @@
         </createTable>
 
         <createTable tableName="members">
-            <column name="id" type="VARCHAR(50)">
+            <column name="id" type="UUID">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="first_name" type="VARCHAR(255)">
@@ -80,13 +80,13 @@
             <column name="reference" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="member_id" type="VARCHAR(50)">
+            <column name="member_id" type="UUID">
                 <constraints nullable="false"/>
             </column>
         </createTable>
 
         <createTable tableName="members_clubs">
-            <column name="member_id" type="VARCHAR(50)">
+            <column name="member_id" type="UUID">
                 <constraints nullable="false"/>
             </column>
             <column name="club_id" type="UUID">
@@ -99,7 +99,7 @@
             <column name="graduation_id" type="UUID">
                 <constraints nullable="false"/>
             </column>
-            <column name="member_id" type="VARCHAR(50)">
+            <column name="member_id" type="UUID">
                 <constraints nullable="false"/>
             </column>
         </createTable>
