@@ -13,6 +13,8 @@ repositories {
 val quarkusPlatformGroupId: String by project
 val quarkusPlatformArtifactId: String by project
 val quarkusPlatformVersion: String by project
+val mapstructVersion: String by project
+val lombokVersion: String by project
 
 dependencies {
     implementation("io.quarkus:quarkus-smallrye-openapi")
@@ -26,11 +28,17 @@ dependencies {
     implementation("io.quarkus:quarkus-jdbc-postgresql")
     implementation("io.quarkus:quarkus-oidc")
     implementation("io.quarkus:quarkus-keycloak-admin-rest-client")
-    implementation("org.mapstruct:mapstruct:1.6.3")
-    annotationProcessor("org.mapstruct:mapstruct-processor:1.6.3")
+    implementation("org.mapstruct:mapstruct:${mapstructVersion}")
+    compileOnly("org.projectlombok:lombok:${lombokVersion}")
+    annotationProcessor("org.mapstruct:mapstruct-processor:${mapstructVersion}")
+    annotationProcessor("org.projectlombok:lombok:${lombokVersion}")
+    annotationProcessor("org.projectlombok:lombok-mapstruct-binding:0.2.0")
     testImplementation("io.quarkus:quarkus-junit5")
     testImplementation("io.quarkus:quarkus-test-security")
     testImplementation("io.rest-assured:rest-assured")
+    testCompileOnly("org.projectlombok:lombok:${lombokVersion}")
+    testAnnotationProcessor("org.projectlombok:lombok:${lombokVersion}")
+    testAnnotationProcessor("org.projectlombok:lombok-mapstruct-binding:0.2.0")
 }
 
 group = "dk.wandywharang"
@@ -44,4 +52,5 @@ java {
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
     options.compilerArgs.add("-parameters")
+    options.compilerArgs.add("-Amapstruct.unmappedTargetPolicy=ERROR")
 }

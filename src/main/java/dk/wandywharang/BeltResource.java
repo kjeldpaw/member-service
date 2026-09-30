@@ -1,76 +1,37 @@
 package dk.wandywharang;
 
-import dk.wandywharang.api.record.BeltRecord;
-import dk.wandywharang.mapper.BeltMapper;
+import dk.wandywharang.api.Belt;
 import dk.wandywharang.service.belt.BeltService;
 import io.smallrye.mutiny.Uni;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
-import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
-import org.jboss.resteasy.reactive.ResponseStatus;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.UUID;
 
 @Path("/api/v1/belts")
 @RequestScoped
+@RequiredArgsConstructor
+@RolesAllowed({"member", "admin", "instructor"})
 public class BeltResource {
     private final BeltService service;
-    private final BeltMapper mapper;
-
-    public BeltResource(BeltService service,
-                        BeltMapper mapper) {
-        this.service = service;
-        this.mapper = mapper;
-    }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed("member")
-    public Uni<List<BeltRecord>> findAll() {
-        return service.findAll()
-                .map(list -> list.stream().map(mapper::toRecord).toList());
+    public Uni<List<Belt>> findAll() {
+        return service.findAll();
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{id}")
     @RolesAllowed("member")
-    public Uni<BeltRecord> findById(@PathParam("id") UUID id) {
+    public Uni<Belt> findById(@PathParam("id") UUID id) {
         return service.findById(id)
-                .map(mapper::toRecord);
-    }
-
-    @POST
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    @RolesAllowed("admin")
-    @ResponseStatus(201)
-    public Uni<BeltRecord> create(@Valid BeltRecord belt) {
-        return service.create(belt)
-                .map(mapper::toRecord);
-    }
-
-    @DELETE
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/{id}")
-    @RolesAllowed("admin")
-    public Uni<Void> delete(@PathParam("id") UUID id) {
-        return service.delete(id);
-    }
-
-    @PUT
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Path("/{id}")
-    @RolesAllowed("admin")
-    public Uni<Void> update(@PathParam("id") UUID id, @Valid BeltRecord belt) {
-        if (id.equals(belt.getId())) {
-            return service.update(id, belt);
-        } else {
-            return Uni.createFrom().failure(new BadRequestException("Belt id does not match path parameter"));
-        }
+                .onItem().ifNull().failWith(new NotFoundException("Belt not found"));
     }
 }

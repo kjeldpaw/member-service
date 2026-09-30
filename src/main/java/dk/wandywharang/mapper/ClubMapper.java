@@ -1,31 +1,23 @@
 package dk.wandywharang.mapper;
 
 import dk.wandywharang.api.Club;
-import dk.wandywharang.api.record.AddressRecord;
-import dk.wandywharang.api.record.ClubRecord;
-import dk.wandywharang.entity.Address;
 import dk.wandywharang.entity.ClubEntity;
 import org.mapstruct.Mapper;
-import org.mapstruct.MappingTarget;
 
-import java.util.Optional;
+import java.util.List;
 
-@Mapper(componentModel = "cdi")
+@Mapper(componentModel = "cdi", uses = {AddressMapper.class})
 public interface ClubMapper {
 
-    ClubRecord toRecord(Club club);
+    Club map(ClubEntity entity);
 
-    ClubEntity toEntity(Club club);
-
-    ClubEntity updateEntity(Club club, @MappingTarget ClubEntity entity);
-
-    AddressRecord toRecord(dk.wandywharang.api.Address address);
-
-    Address toEntity(dk.wandywharang.api.Address address);
-
-    void updateEntity(dk.wandywharang.api.Address address, @MappingTarget Address entity);
-
-    default String map(Optional<String> value) {
-        return value.orElse(null);
+    default List<Club> map(List<ClubEntity> entities) {
+        if (entities != null) {
+            return entities.stream()
+                    .map(this::map)
+                    .toList();
+        } else {
+            return List.of();
+        }
     }
 }

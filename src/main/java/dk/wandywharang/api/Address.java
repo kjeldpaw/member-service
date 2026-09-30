@@ -1,13 +1,7 @@
 package dk.wandywharang.api;
 
-import java.util.Optional;
+import lombok.Builder;
 
-public interface Address {
-
-    Optional<String> getStreet();
-
-    Optional<String> getCity();
-
-    Optional<String> getZipCode();
-
+@Builder
+public record Address(String street, String city, String zipCode) {
 }

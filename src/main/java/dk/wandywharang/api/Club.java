@@ -1,12 +1,9 @@
 package dk.wandywharang.api;
 
+import lombok.Builder;
+
 import java.util.UUID;
 
-public interface Club {
-
-    UUID getId();
-
-    String getName();
-
-    Address getAddress();
+@Builder
+public record Club(UUID id, String name, Address address) {
 }

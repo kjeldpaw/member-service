@@ -4,7 +4,6 @@ import dk.wandywharang.api.Club;
 import dk.wandywharang.mapper.ClubMapper;
 import dk.wandywharang.repository.ClubRepository;
 import io.quarkus.hibernate.reactive.panache.common.WithSession;
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -24,36 +23,16 @@ public class ClubServiceImpl implements ClubService {
 
     @Override
     @WithSession
-    public Uni<List<? extends Club>> findAll() {
+    public Uni<List<Club>> findAll() {
         return repository.findAll().list()
-                .map(list -> list);
+                .map(mapper::map);
     }
 
     @Override
     @WithSession
-    public Uni<? extends Club> findById(UUID id) {
-        return repository.findById(id);
-    }
-
-    @Override
-    @WithTransaction
-    public Uni<? extends Club> create(Club club) {
-        return repository.persist(mapper.toEntity(club));
-    }
-
-    @Override
-    @WithTransaction
-    public Uni<Void> delete(UUID id) {
-        return repository.deleteById(id)
-                .chain(_ -> Uni.createFrom().voidItem());
-    }
-
-    @Override
-    @WithTransaction
-    public Uni<Void> update(UUID id, Club club) {
+    public Uni<Club> findById(UUID id) {
         return repository.findById(id)
-                .map(entity -> mapper.updateEntity(club, entity))
-                .chain(_ -> Uni.createFrom().voidItem());
+                .onItem().ifNotNull().transform(mapper::map);
     }
 
 }

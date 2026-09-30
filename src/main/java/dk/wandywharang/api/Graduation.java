@@ -1,19 +1,12 @@
 package dk.wandywharang.api;
 
+import lombok.Builder;
+
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-public interface Graduation {
-
-    UUID getId();
-
-    LocalDate getDate();
-
-    Set<? extends  Member> getGraduatedBy();
-
-    Belt getBelt();
-
-    Optional<? extends Graduation> getPreviousGraduation();
+@Builder
+public record Graduation(UUID id, LocalDate date, Set<Member> graduatedBy, Belt belt, Optional<Graduation> previousGraduation) {
 }

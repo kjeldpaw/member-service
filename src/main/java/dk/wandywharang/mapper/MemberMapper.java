@@ -1,35 +1,34 @@
 package dk.wandywharang.mapper;
-import dk.wandywharang.api.Graduation;
+
+import dk.wandywharang.api.CreateMemberRequest;
 import dk.wandywharang.api.Member;
-import dk.wandywharang.api.record.MemberRecord;
-import dk.wandywharang.entity.GraduationEntity;
+import dk.wandywharang.api.UpdateMemberRequest;
 import dk.wandywharang.entity.MemberEntity;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
-import java.time.LocalDate;
-import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-@Mapper(componentModel = "cdi")
+@Mapper(componentModel = "cdi", uses = {BeltMapper.class, AddressMapper.class, ReferenceMapper.class, GraduationMapper.class, OptionalMapper.class})
 public interface MemberMapper {
 
-    MemberRecord toRecord(MemberEntity member);
+    Member map(MemberEntity member);
 
-    MemberEntity toEntity(Member member);
+    @Mapping(target = "phone", expression = "java(member.phone().orElse(null))")
+    @Mapping(target = "dateOfBirth", expression = "java(member.dateOfBirth().orElse(null))")
+    MemberEntity map(Member member);
 
-    default Graduation map(Optional<? extends Graduation> value) {
-        return value.orElse(null);
+    @Mapping(target = "phone", expression = "java(member.phone().orElse(null))")
+    MemberEntity map(CreateMemberRequest request);
+
+    @Mapping(target = "phone", expression = "java(request.phone().orElse(null))")
+    MemberEntity map(UpdateMemberRequest request, @MappingTarget MemberEntity entity);
+
+    default Set<Member> map(Set<MemberEntity> memberEntities) {
+        return memberEntities.stream()
+                .map(this::map)
+                .collect(Collectors.toSet());
     }
-
-    default GraduationEntity mapToEntity(Optional<? extends Graduation> value) {
-        return (GraduationEntity) value.orElse(null);
-    }
-
-    default String mapString(Optional<String> value) {
-        return value.orElse(null);
-    }
-
-    default LocalDate mapLocalDate(Optional<LocalDate> value) {
-        return value.orElse(null);
-    }
-}
+ }

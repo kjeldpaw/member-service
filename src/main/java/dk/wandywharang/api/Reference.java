@@ -1,12 +1,9 @@
 package dk.wandywharang.api;
 
+import lombok.Builder;
+
 import java.util.UUID;
 
-public interface Reference {
-
-    UUID getId();
-
-    ReferenceType getType();
-
-    String getReference();
+@Builder
+public record Reference(UUID id, ReferenceType type, String reference) {
 }

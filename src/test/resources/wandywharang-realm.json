@@ -6,10 +6,34 @@
   "loginWithEmailAllowed": true,
   "roles": {
     "realm": [
-      { "name": "admin",      "description": "Full access to all member management operations" },
-      { "name": "instructor", "description": "Can view members and manage belt graduations" },
-      { "name": "member",     "description": "Basic member access" }
+      {
+        "name": "admin",
+        "description": "Full access to all member management operations"
+      },
+      {
+        "name": "instructor",
+        "description": "Can view members and manage belt graduations"
+      },
+      {
+        "name": "member",
+        "description": "Basic member access"
+      },
+      {
+        "name": "default-roles-wandywharang",
+        "description": "Roles granted to every new user",
+        "composite": true,
+        "composites": {
+          "realm": [
+            "member"
+          ]
+        }
+      }
     ]
+  },
+  "defaultRole": {
+    "name": "default-roles-wandywharang",
+    "composite": true,
+    "clientRole": false
   },
   "clients": [
     {
@@ -21,8 +45,12 @@
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": true,
-      "redirectUris": ["http://localhost:8080/*"],
-      "webOrigins": ["http://localhost:8080"]
+      "redirectUris": [
+        "http://localhost:8080/*"
+      ],
+      "webOrigins": [
+        "http://localhost:8080"
+      ]
     }
   ],
   "users": [
@@ -33,8 +61,16 @@
       "lastName": "WandyWhaRang",
       "enabled": true,
       "emailVerified": true,
-      "credentials": [{ "type": "password", "value": "admin", "temporary": false }],
-      "realmRoles": ["admin"]
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "admin"
+      ]
     },
     {
       "username": "instructor@wandywharang.dk",
@@ -43,8 +79,16 @@
       "lastName": "Instructor",
       "enabled": true,
       "emailVerified": true,
-      "credentials": [{ "type": "password", "value": "instructor", "temporary": false }],
-      "realmRoles": ["instructor"]
+      "credentials": [
+        {
+          "type": "password",
+          "value": "instructor",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "instructor"
+      ]
     },
     {
       "username": "member@wandywharang.dk",
@@ -53,8 +97,28 @@
       "lastName": "Member",
       "enabled": true,
       "emailVerified": true,
-      "credentials": [{ "type": "password", "value": "member", "temporary": false }],
-      "realmRoles": ["member"]
+      "credentials": [
+        {
+          "type": "password",
+          "value": "member",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "member"
+      ]
+    },
+    {
+      "username": "service-account-member-service",
+      "enabled": true,
+      "serviceAccountClientId": "member-service",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users",
+          "query-users"
+        ]
+      }
     }
   ]
 }

@@ -103,7 +103,8 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
-        <addPrimaryKey tableName="graduation_members" columnNames="graduation_id, member_id" constraintName="pk_graduation_members"/>
+        <addPrimaryKey tableName="graduation_members" columnNames="graduation_id, member_id"
+                       constraintName="pk_graduation_members"/>
 
         <addForeignKeyConstraint baseColumnNames="belt_id"
                                  baseTableName="graduations"
@@ -158,6 +159,236 @@
                                  constraintName="fk_grad_mem_member"
                                  referencedColumnNames="id"
                                  referencedTableName="members"/>
+
+        <insert tableName="belts">
+            <column name="id" value="2eeaf34f-cada-426b-94e8-917386df594b"/>
+            <column name="name" value="Yellow Belt (9. MON)"/>
+            <column name="wait_time" valueNumeric="0"/>
+            <column name="rank" valueNumeric="1"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="ead57272-3dc9-4480-aba1-fd490c89eac6"/>
+            <column name="name" value="Orange Belt (8. MON)"/>
+            <column name="wait_time" valueNumeric="0"/>
+            <column name="rank" valueNumeric="2"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="ae6111b5-377a-41e7-be00-7dfd79e62514"/>
+            <column name="name" value="Green Belt (7. MON)"/>
+            <column name="wait_time" valueNumeric="0"/>
+            <column name="rank" valueNumeric="3"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="b8f0900f-18b0-4972-8a4f-b92a29a2cca9"/>
+            <column name="name" value="Blue Belt (6. MON)"/>
+            <column name="wait_time" valueNumeric="0"/>
+            <column name="rank" valueNumeric="4"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="f2189897-a0ef-4739-847e-a1057ed583ab"/>
+            <column name="name" value="Blue Belt with red snippet (5. MON)"/>
+            <column name="wait_time" valueNumeric="0"/>
+            <column name="rank" valueNumeric="5"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="25debc67-39ea-49bb-9fc6-135f513eb86e"/>
+            <column name="name" value="Red Belt (4. MON)"/>
+            <column name="wait_time" valueNumeric="0"/>
+            <column name="rank" valueNumeric="6"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="2857610a-c7e9-4ce3-9a6c-8505dc6e1b88"/>
+            <column name="name" value="Red Belt with black snippet (3. MON)"/>
+            <column name="wait_time" valueNumeric="0"/>
+            <column name="rank" valueNumeric="7"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="d7babcec-2e35-4767-b51e-188bfc885801"/>
+            <column name="name" value="Red Belt with two black snippets (2. MON)"/>
+            <column name="wait_time" valueNumeric="0"/>
+            <column name="rank" valueNumeric="8"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="a10fb285-6fd7-46f5-a87f-6edfc8ccebf4"/>
+            <column name="name" value="Red Belt with three black snippets (1. MON)"/>
+            <column name="wait_time" valueNumeric="0"/>
+            <column name="rank" valueNumeric="9"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="9ad942fa-c38b-4236-987e-3d6a1556aadf"/>
+            <column name="name" value="White Belt with yellow snippet (10. KUP)"/>
+            <column name="wait_time" valueNumeric="0"/>
+            <column name="rank" valueNumeric="10"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="92571ddc-01a0-490f-baed-d89c66c1e61d"/>
+            <column name="name" value="Yellow Belt (9. KUP)"/>
+            <column name="wait_time" valueNumeric="0"/>
+            <column name="rank" valueNumeric="11"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="bcd4a304-3ced-4919-8815-334ce85e0b30"/>
+            <column name="name" value="Orange Belt (8. KUP)"/>
+            <column name="wait_time" valueNumeric="0"/>
+            <column name="rank" valueNumeric="12"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="a08afafd-3c92-47d2-91b4-5c5406f7cc9d"/>
+            <column name="name" value="Green Belt (7. KUP)"/>
+            <column name="wait_time" valueNumeric="0"/>
+            <column name="rank" valueNumeric="13"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="f1a18af6-b1f7-4f9a-bb3e-2fd8fe1a85d5"/>
+            <column name="name" value="Blue Belt (6. KUP)"/>
+            <column name="wait_time" valueNumeric="0"/>
+            <column name="rank" valueNumeric="14"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="4770146b-988a-4b12-b54f-3d63fe714280"/>
+            <column name="name" value="Blue Belt with red snippet (5. KUP)"/>
+            <column name="wait_time" valueNumeric="0"/>
+            <column name="rank" valueNumeric="15"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="2062c9ea-a85c-4dc8-aab1-ff003d226de8"/>
+            <column name="name" value="Red Belt (4. KUP)"/>
+            <column name="wait_time" valueNumeric="0"/>
+            <column name="rank" valueNumeric="16"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="3ac08b1d-4ca6-4208-a3c9-a8ebd414cc9a"/>
+            <column name="name" value="Red Belt with black snippet (3. KUP)"/>
+            <column name="wait_time" valueNumeric="0"/>
+            <column name="rank" valueNumeric="17"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="83e327ba-714a-4c67-80ad-b1f37dfaee6a"/>
+            <column name="name" value="Red Belt with two black snippets (2. KUP)"/>
+            <column name="wait_time" valueNumeric="0"/>
+            <column name="rank" valueNumeric="18"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="16f1e0cc-3421-4444-bfdd-a1206c7769b0"/>
+            <column name="name" value="Red Belt with three black snippets (1. KUP)"/>
+            <column name="wait_time" valueNumeric="0"/>
+            <column name="rank" valueNumeric="19"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="aae0ca9f-4674-460b-9b63-4850bf018dcb"/>
+            <column name="name" value="Black Belt (1. DAN)"/>
+            <column name="wait_time" valueNumeric="365"/>
+            <column name="rank" valueNumeric="20"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="3f5c8106-a51c-4d24-bd99-a651758b5f9a"/>
+            <column name="name" value="Black Belt (2. DAN)"/>
+            <column name="wait_time" valueNumeric="730"/>
+            <column name="rank" valueNumeric="21"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="4a5a38a8-b293-45be-af5d-7653d8318d33"/>
+            <column name="name" value="Black Belt (3. DAN)"/>
+            <column name="wait_time" valueNumeric="1096"/>
+            <column name="rank" valueNumeric="22"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="d2186411-ec88-48ca-8976-c3bf46407885"/>
+            <column name="name" value="Black Belt (4. DAN)"/>
+            <column name="wait_time" valueNumeric="1460"/>
+            <column name="rank" valueNumeric="23"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="80f5f607-142c-488c-8e20-67ad8a6dd234"/>
+            <column name="name" value="Black Belt (5. DAN)"/>
+            <column name="wait_time" valueNumeric="1825"/>
+            <column name="rank" valueNumeric="24"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="fff9b69f-f517-41a6-8441-f03db8e1bca6"/>
+            <column name="name" value="Black Belt (6. DAN)"/>
+            <column name="wait_time" valueNumeric="2190"/>
+            <column name="rank" valueNumeric="25"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="70a81b3a-7a17-41da-a190-ec6f11bafc4e"/>
+            <column name="name" value="Black Belt (7. DAN)"/>
+            <column name="wait_time" valueNumeric="2555"/>
+            <column name="rank" valueNumeric="26"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="27c654b4-d47d-4e17-b280-14db44f80cf0"/>
+            <column name="name" value="Black Belt (8. DAN)"/>
+            <column name="wait_time" valueNumeric="2920"/>
+            <column name="rank" valueNumeric="27"/>
+        </insert>
+
+        <insert tableName="belts">
+            <column name="id" value="f77a40bb-65c9-4081-88c0-6ed67301f774"/>
+            <column name="name" value="Black Belt (9. DAN)"/>
+            <column name="wait_time" valueNumeric="3285"/>
+            <column name="rank" valueNumeric="28"/>
+        </insert>
+
+        <insert tableName="clubs">
+            <column name="id" value="0d09a35b-02c4-4279-9416-a5a302613f3f"/>
+            <column name="name" value="Randers Taekwondo Klub"/>
+            <column name="street" value="Mariagervej 180"/>
+            <column name="city" value="Randers"/>
+            <column name="zip_code" value="8920"/>
+        </insert>
+
+        <insert tableName="clubs">
+            <column name="id" value="a4f3fcc3-904b-48c0-9b2b-4225dc6dbe92"/>
+            <column name="name" value="Midtdjurs Taekwondo Klub"/>
+            <column name="street" value="Bugtrupvej 33"/>
+            <column name="city" value="Kolind"/>
+            <column name="zip_code" value="8560"/>
+        </insert>
+
+        <insert tableName="clubs">
+            <column name="id" value="eced5ba8-4097-4284-b69b-4c8ef24838cc"/>
+            <column name="name" value="Taekwondoklubben Hwa Rang Aarhus"/>
+            <column name="street" value="Læssøesgade 24"/>
+            <column name="city" value="Aarhus"/>
+            <column name="zip_code" value="8000"/>
+        </insert>
+
+        <insert tableName="clubs">
+            <column name="id" value="e52a3058-c086-4588-b7cf-4a30f14a10a1"/>
+            <column name="name" value="Nordjysk Taekwondo Center"/>
+            <column name="street" value="Studievej 14"/>
+            <column name="city" value="Nørresundby"/>
+            <column name="zip_code" value="9400"/>
+        </insert>
+
+
     </changeSet>
 
 </databaseChangeLog>

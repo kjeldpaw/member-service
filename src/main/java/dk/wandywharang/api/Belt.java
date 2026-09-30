@@ -1,15 +1,10 @@
 package dk.wandywharang.api;
 
+import lombok.Builder;
+
 import java.time.Duration;
 import java.util.UUID;
 
-public interface Belt {
-
-    UUID getId();
-
-    String getName();
-
-    Duration getWaitTime();
-
-    Integer getRank();
+@Builder
+public record Belt(UUID id, String name, Duration waitTime, Integer rank) {
 }

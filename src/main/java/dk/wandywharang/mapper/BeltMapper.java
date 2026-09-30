@@ -1,18 +1,24 @@
 package dk.wandywharang.mapper;
 
 import dk.wandywharang.api.Belt;
-import dk.wandywharang.api.record.BeltRecord;
 import dk.wandywharang.entity.BeltEntity;
 import org.mapstruct.Mapper;
-import org.mapstruct.MappingTarget;
+
+import java.util.List;
 
 @Mapper(componentModel = "cdi")
 public interface BeltMapper {
 
-    BeltRecord toRecord(Belt belt);
+    Belt map(BeltEntity entity);
 
-    BeltEntity toEntity(Belt belt);
-
-    BeltEntity updateEntity(Belt belt, @MappingTarget BeltEntity entity);
+    default List<Belt> map(List<BeltEntity> entities) {
+        if (entities != null) {
+            return entities.stream()
+                    .map(this::map)
+                    .toList();
+        } else {
+            return List.of();
+        }
+    }
 
 }

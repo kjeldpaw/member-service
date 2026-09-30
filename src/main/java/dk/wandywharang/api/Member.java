@@ -1,30 +1,25 @@
 package dk.wandywharang.api;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
+
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
-public interface Member {
-
-    String getId();
-
-    String getFirstName();
-
-    String getLastName();
-
-    Address getAddress();
-
-    Optional<String> getPhone();
-
-    String getEmail();
-
-    Optional<LocalDate> getDateOfBirth();
-
-    Club getClub();
-
-    Optional<? extends Graduation> getGraduation();
-
-    Set<? extends Reference> getReferences();
+@Builder
+public record Member(@NotEmpty UUID id,
+                     @NotEmpty String firstName,
+                     @NotEmpty String lastName,
+                     @NotNull Address address,
+                     Optional<String> phone,
+                     @Email String email,
+                     Optional<LocalDate> dateOfBirth,
+                     @NotNull Club club,
+                     Optional<Graduation> graduation,
+                     Set<Reference> references) {
 
 }
-

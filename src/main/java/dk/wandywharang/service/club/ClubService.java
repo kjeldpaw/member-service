@@ -8,14 +8,8 @@ import java.util.UUID;
 
 public interface ClubService {
 
-    Uni<List<? extends Club>> findAll();
+    Uni<List<Club>> findAll();
 
-    Uni<? extends Club> findById(UUID id);
-
-    Uni<? extends Club> create(Club club);
-
-    Uni<Void> delete(UUID id);
-
-    Uni<Void> update(UUID id, Club club);
+    Uni<Club> findById(UUID id);
 
 }
