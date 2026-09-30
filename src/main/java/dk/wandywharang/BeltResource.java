@@ -1,7 +1,7 @@
 package dk.wandywharang;
 
 import dk.wandywharang.api.Belt;
-import dk.wandywharang.service.belt.BeltService;
+import dk.wandywharang.service.BeltService;
 import io.smallrye.mutiny.Uni;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;

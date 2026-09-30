@@ -1,8 +1,8 @@
-package dk.wandywharang.service.member;
+package dk.wandywharang.service;
 
-import dk.wandywharang.api.Club;
 import dk.wandywharang.api.CreateMemberRequest;
 import dk.wandywharang.api.Member;
+import dk.wandywharang.api.UpdateMemberRequest;
 import io.smallrye.mutiny.Uni;
 
 import java.util.List;
@@ -14,8 +14,7 @@ public interface MemberService {
 
     Uni<Member> findById(UUID id);
 
-    Uni<List<Member>> findByClub(Club club);
-
     Uni<Member> create(CreateMemberRequest request);
 
+    Uni<Member> update(UUID id, UpdateMemberRequest request);
 }

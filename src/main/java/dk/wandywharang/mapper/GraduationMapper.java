@@ -1,8 +1,8 @@
 package dk.wandywharang.mapper;
 
-import dk.wandywharang.api.AddMemberGraduationRequest;
+import dk.wandywharang.api.CreateGraduationRequest;
 import dk.wandywharang.api.Graduation;
-import dk.wandywharang.api.UpdateMemberGraduationRequest;
+import dk.wandywharang.api.UpdateGraduationRequest;
 import dk.wandywharang.entity.GraduationEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -18,10 +18,10 @@ public interface GraduationMapper {
     @Mapping(target = "graduatedBy", ignore = true)
     @Mapping(target = "belt", ignore = true)
     @Mapping(target = "previousGraduation", ignore = true)
-    GraduationEntity map(AddMemberGraduationRequest request);
+    GraduationEntity map(CreateGraduationRequest request);
 
     @Mapping(target = "graduatedBy", ignore = true)
     @Mapping(target = "belt", ignore = true)
     @Mapping(target = "previousGraduation", ignore = true)
-    GraduationEntity map(UpdateMemberGraduationRequest request, @MappingTarget GraduationEntity entity);
+    GraduationEntity map(UpdateGraduationRequest request, @MappingTarget GraduationEntity entity);
 }

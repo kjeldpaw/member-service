@@ -1,4 +1,4 @@
-package dk.wandywharang.service.belt;
+package dk.wandywharang.service;
 
 import dk.wandywharang.api.Belt;
 import dk.wandywharang.mapper.BeltMapper;

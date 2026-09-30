@@ -1,7 +1,7 @@
 package dk.wandywharang;
 
 import dk.wandywharang.api.Club;
-import dk.wandywharang.service.club.ClubService;
+import dk.wandywharang.service.ClubService;
 import io.smallrye.mutiny.Uni;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;

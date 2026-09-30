@@ -1,4 +1,4 @@
-package dk.wandywharang.service.club;
+package dk.wandywharang.service;
 
 import dk.wandywharang.api.Club;
 import io.smallrye.mutiny.Uni;
