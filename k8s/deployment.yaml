@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: member-service
+  namespace: member-service
+  labels:
+    app: member-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: member-service
+  template:
+    metadata:
+      labels:
+        app: member-service
+    spec:
+      containers:
+        - name: member-service
+          # Pin to a specific :<commit-sha> tag instead of :latest for reproducible rollouts.
+          image: ghcr.io/kjeldpaw/member-service:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: member-service-config
+            - secretRef:
+                name: member-service-secrets
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "768Mi"
+          # No quarkus-smallrye-health dependency is wired up yet, so these probe the port
+          # rather than an HTTP health endpoint. Add quarkus-smallrye-health and switch to
+          # httpGet on /q/health/live and /q/health/ready for proper startup/liveness checks.
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20

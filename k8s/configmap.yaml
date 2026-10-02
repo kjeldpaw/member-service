@@ -1,0 +1,17 @@
+# Non-sensitive configuration. Adjust the hostnames below if your Postgres/Keycloak
+# Services are named differently or live in another namespace.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: member-service-config
+  namespace: member-service
+data:
+  QUARKUS_DATASOURCE_JDBC_URL: "jdbc:postgresql://postgres.member-service.svc.cluster.local:5432/member_service"
+  QUARKUS_DATASOURCE_REACTIVE_URL: "postgresql://postgres.member-service.svc.cluster.local:5432/member_service"
+  QUARKUS_OIDC_AUTH_SERVER_URL: "http://keycloak.member-service.svc.cluster.local:8080/realms/wandywharang"
+  QUARKUS_OIDC_CLIENT_ID: "member-service"
+  QUARKUS_KEYCLOAK_ADMIN_CLIENT_SERVER_URL: "http://keycloak.member-service.svc.cluster.local:8080"
+  QUARKUS_KEYCLOAK_ADMIN_CLIENT_REALM: "wandywharang"
+  QUARKUS_KEYCLOAK_ADMIN_CLIENT_CLIENT_ID: "member-service"
+  QUARKUS_KEYCLOAK_ADMIN_CLIENT_GRANT_TYPE: "CLIENT_CREDENTIALS"
+  MEMBER_SERVICE_KEYCLOAK_REALM: "wandywharang"
