@@ -28,11 +28,16 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Run unit tests and build application
-        run: ./gradlew build
+      - name: Run unit tests
+        run: ./gradlew test
 
       - name: Run integration tests (Testcontainers)
         run: ./gradlew integrationTest
+
+      - name: Build native executable
+        # Compiles with a containerized Mandrel/GraalVM builder (quarkus.native.container-build), so
+        # the runner only needs Docker, not a local GraalVM install. Tests already ran above.
+        run: ./gradlew build -x test -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -45,7 +50,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: src/main/docker/Dockerfile.jvm
+          file: src/main/docker/Dockerfile.native
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest

@@ -136,6 +136,17 @@ class MemberLifecycleIT {
     }
 
     @Test
+    void healthEndpointsReportUpWithRealDependencies() {
+        given().get("/q/health/live")
+                .then().statusCode(200)
+                .body("status", equalTo("UP"));
+
+        given().get("/q/health/ready")
+                .then().statusCode(200)
+                .body("status", equalTo("UP"));
+    }
+
+    @Test
     void clubsAndBeltsAreReadableOnceSeeded() throws SQLException {
         final var beltId = TestDatabase.insertBelt(dataSource, "White Belt", 1);
         final var memberToken = KeycloakTestSupport.tokenFor("member@wandywharang.dk", "member");
