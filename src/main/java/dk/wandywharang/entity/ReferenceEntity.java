@@ -8,7 +8,7 @@ import lombok.Setter;
 import java.util.UUID;
 
 @Entity
-@Table(name = "references")
+@Table(name = "`references`")
 public class ReferenceEntity {
 
     @Getter

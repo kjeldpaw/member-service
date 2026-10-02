@@ -56,3 +56,23 @@ tasks.withType<JavaCompile> {
     options.compilerArgs.add("-parameters")
     options.compilerArgs.add("-Amapstruct.unmappedTargetPolicy=ERROR")
 }
+
+// Integration tests (tagged "integration") run against real Postgres and Keycloak containers started by Quarkus Dev
+// Services via Testcontainers. They live alongside the unit tests but are excluded from the default `test` task
+// since they need Docker and are much slower; run them explicitly with `./gradlew integrationTest`.
+tasks.test {
+    useJUnitPlatform {
+        excludeTags("integration")
+    }
+}
+
+tasks.register<Test>("integrationTest") {
+    description = "Runs integration tests against real Postgres and Keycloak containers (requires Docker)."
+    group = "verification"
+    testClassesDirs = tasks.test.get().testClassesDirs
+    classpath = tasks.test.get().classpath
+    useJUnitPlatform {
+        includeTags("integration")
+    }
+    shouldRunAfter(tasks.test)
+}
