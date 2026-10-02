@@ -8,5 +8,5 @@ import java.util.Set;
 import java.util.UUID;
 
 @Builder
-public record Graduation(UUID id, LocalDate date, Set<Member> graduatedBy, Belt belt, Optional<Graduation> previousGraduation) {
+public record Graduation(UUID id, LocalDate date, Set<Examiner> graduatedBy, Belt belt, Optional<Graduation> previousGraduation) {
 }

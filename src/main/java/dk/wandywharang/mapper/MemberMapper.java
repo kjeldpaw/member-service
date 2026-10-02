@@ -8,9 +8,6 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
-import java.util.Set;
-import java.util.stream.Collectors;
-
 @Mapper(componentModel = "cdi", uses = {AddressMapper.class, ClubMapper.class, ReferenceMapper.class, GraduationMapper.class, OptionalMapper.class})
 public interface MemberMapper {
 
@@ -31,16 +28,7 @@ public interface MemberMapper {
     @Mapping(target = "club", ignore = true)
     @Mapping(target = "graduation", ignore = true)
     @Mapping(target = "references", ignore = true)
-    @Mapping(target = "phone", expression = "java(request.getPhone().orElse(null))")
-    @Mapping(target = "dateOfBirth", expression = "java(request.getDateOfBirth().orElse(null))")
+    @Mapping(target = "phone", expression = "java(request.phone().orElse(null))")
+    @Mapping(target = "dateOfBirth", expression = "java(request.dateOfBirth().orElse(null))")
     MemberEntity map(UpdateMemberRequest request, @MappingTarget MemberEntity entity);
-
-    default Set<Member> map(Set<MemberEntity> memberEntities) {
-        if (memberEntities == null) {
-            return Set.of();
-        }
-        return memberEntities.stream()
-                .map(this::map)
-                .collect(Collectors.toSet());
-    }
 }

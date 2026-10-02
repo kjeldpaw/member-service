@@ -3,18 +3,15 @@ package dk.wandywharang.service;
 import dk.wandywharang.api.CreateMemberRequest;
 import dk.wandywharang.api.Member;
 import dk.wandywharang.api.UpdateMemberRequest;
-import dk.wandywharang.entity.ClubEntity;
 import dk.wandywharang.entity.MemberEntity;
 import dk.wandywharang.mapper.MemberMapper;
 import dk.wandywharang.repository.ClubRepository;
 import dk.wandywharang.repository.MemberRepository;
 import io.quarkus.hibernate.reactive.panache.common.WithSession;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
-import io.quarkus.security.identity.SecurityIdentity;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.unchecked.Unchecked;
 import jakarta.enterprise.context.RequestScoped;
-import jakarta.ws.rs.NotAllowedException;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
@@ -26,7 +23,7 @@ import java.util.UUID;
 @RequestScoped
 @RequiredArgsConstructor
 public class MemberServiceImpl implements MemberService {
-    private final SecurityIdentity securityIdentity;
+    private final MemberAccess memberAccess;
     private final MemberMapper mapper;
     private final MemberRepository repository;
     private final ClubRepository clubRepository;
@@ -35,32 +32,22 @@ public class MemberServiceImpl implements MemberService {
     @WithSession
     @Override
     public Uni<List<Member>> findAll() {
-        if (securityIdentity.hasRole("admin")) {
-            return repository.findAll().list().onItem().transform(entities -> entities.stream().map(mapper::map).toList());
+        if (memberAccess.isAdmin()) {
+            return repository.findAll().list().chain(this::map);
         } else {
-            return profile().onItem().transformToUni(profile -> findByClub(profile.getClub()))
-                    .map(entities -> entities.stream().map(mapper::map).toList());
+            return memberAccess.profile()
+                    .chain(profile -> repository.find("club.id", profile.getClub().getId()).list())
+                    .chain(this::map);
         }
     }
 
     @WithSession
     @Override
     public Uni<Member> findById(UUID id) {
-        if (securityIdentity.hasRole("admin")) {
-            return repository.findById(id).onItem().ifNotNull().transform(mapper::map);
-        } else {
-            return Uni.combine().all().unis(profile(), repository.findById(id))
-                    .asTuple().onItem().transform(Unchecked.function(tuple -> {
-                        if (tuple.getItem1().getClub().getId().equals(tuple.getItem2().getClub().getId())) {
-                            return tuple.getItem2();
-                        } else {
-                            throw new NotFoundException("Member not found");
-                        }
-                    }))
-                    .map(mapper::map);
-        }
+        return memberAccess.findVisible(id)
+                .chain(repository::fetchDetails)
+                .map(mapper::map);
     }
-
 
     /**
      * Creates the Keycloak user first, so its id can be used as the member id. If persisting the member fails, the
@@ -79,25 +66,12 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @WithTransaction
-    @WithSession
     @Override
     public Uni<Member> update(UUID id, UpdateMemberRequest request) {
-        if (securityIdentity.hasRole("admin")) {
-            return repository.findById(id)
-                    .onItem().ifNull().failWith(() -> new NotFoundException(String.format("Member with id = %s not found", id)))
-                    .map(member -> mapper.map(request, member))
-                    .map(mapper::map);
-        } else {
-            return Uni.combine().all().unis(profile(), repository.findById(id))
-                    .asTuple().onItem().transform(Unchecked.function(tuple -> {
-                        if (tuple.getItem1().getClub().getId().equals(tuple.getItem2().getClub().getId())) {
-                            return tuple.getItem2();
-                        } else {
-                            throw new NotAllowedException("Member not belongs to club");
-                        }
-                    }))
-                    .map(mapper::map);
-        }
+        return memberAccess.findEditable(id)
+                .invoke(member -> mapper.map(request, member))
+                .chain(repository::fetchDetails)
+                .map(mapper::map);
     }
 
     private Uni<Member> persist(UUID id, CreateMemberRequest request) {
@@ -112,12 +86,13 @@ public class MemberServiceImpl implements MemberService {
                 .map(mapper::map);
     }
 
-    private Uni<MemberEntity> profile() {
-        return repository.findById(UUID.fromString(securityIdentity.getPrincipal().getName()))
-                .onItem().ifNull().failWith(new NotFoundException(String.format("Profile with id = %s not found", securityIdentity.getPrincipal().getName())));
-    }
-
-    private Uni<List<MemberEntity>> findByClub(ClubEntity club) {
-        return repository.find("club.id", club.getId()).list();
+    /**
+     * Fetches the details of the members one at a time, as a reactive session does not allow concurrent use.
+     */
+    private Uni<List<Member>> map(List<MemberEntity> entities) {
+        return Multi.createFrom().iterable(entities)
+                .onItem().transformToUniAndConcatenate(repository::fetchDetails)
+                .map(mapper::map)
+                .collect().asList();
     }
 }
