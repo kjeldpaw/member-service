@@ -35,6 +35,8 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok-mapstruct-binding:0.2.0")
     testImplementation("io.quarkus:quarkus-junit5")
     testImplementation("io.quarkus:quarkus-test-security")
+    testImplementation("io.quarkus:quarkus-junit5-mockito")
+    testImplementation("org.mockito:mockito-junit-jupiter")
     testImplementation("io.rest-assured:rest-assured")
     testCompileOnly("org.projectlombok:lombok:${lombokVersion}")
     testAnnotationProcessor("org.projectlombok:lombok:${lombokVersion}")

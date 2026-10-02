@@ -27,6 +27,10 @@ public class MemberAccess {
         return securityIdentity.hasRole("admin");
     }
 
+    private boolean isInstructor() {
+        return securityIdentity.hasRole("instructor");
+    }
+
     public Uni<MemberEntity> findVisible(UUID id) {
         if (isAdmin()) {
             return find(id);
@@ -38,11 +42,28 @@ public class MemberAccess {
         if (isAdmin()) {
             return find(id);
         }
-        if (!securityIdentity.hasRole("instructor")) {
+        if (!isInstructor()) {
             return Uni.createFrom().failure(new ForbiddenException("Not allowed to edit members"));
         }
         return find(id).chain(member -> requireSameClub(member,
                 () -> new ForbiddenException(String.format("Member with id = %s is not in your club", id))));
+    }
+
+    /**
+     * Fails unless the current user may add members to the given club: admins to any club, instructors to their own.
+     */
+    public Uni<Void> requireEditableClub(UUID clubId) {
+        if (isAdmin()) {
+            return Uni.createFrom().voidItem();
+        }
+        if (!isInstructor()) {
+            return Uni.createFrom().failure(new ForbiddenException("Not allowed to edit members"));
+        }
+        return profile().invoke(Unchecked.consumer(profile -> {
+            if (!profile.getClub().getId().equals(clubId)) {
+                throw new ForbiddenException(String.format("Club with id = %s is not your club", clubId));
+            }
+        })).replaceWithVoid();
     }
 
     public Uni<MemberEntity> profile() {

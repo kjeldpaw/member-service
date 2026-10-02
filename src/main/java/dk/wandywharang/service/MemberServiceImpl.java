@@ -51,13 +51,14 @@ public class MemberServiceImpl implements MemberService {
 
     /**
      * Creates the Keycloak user first, so its id can be used as the member id. If persisting the member fails, the
-     * Keycloak user is removed again. The setup email is only sent once the member is stored.
+     * Keycloak user is removed again. The setup email is only sent once the member is stored. The club is checked
+     * before anything is created, so a forbidden request never reaches Keycloak.
      */
     @WithTransaction
-    @WithSession
     @Override
     public Uni<Member> create(CreateMemberRequest request) {
-        return registerService.register(request)
+        return memberAccess.requireEditableClub(request.clubId())
+                .chain(() -> registerService.register(request))
                 .chain(userId -> persist(UUID.fromString(userId), request)
                         .onFailure().call(() -> registerService.unregister(userId))
                         .call(() -> registerService.sendSetupEmail(userId)
