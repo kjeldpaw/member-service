@@ -1,0 +1,6 @@
+apiVersion: v2
+name: member-service
+description: Quarkus member-service backed by Postgres and Keycloak
+type: application
+version: 0.1.0
+appVersion: "latest"
