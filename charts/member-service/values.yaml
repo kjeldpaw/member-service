@@ -1,0 +1,83 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/kjeldpaw/member-service
+  # Defaults to the chart's appVersion. Prefer a :<commit-sha> tag for reproducible rollouts,
+  # e.g. --set image.tag=$(git rev-parse HEAD).
+  tag: ""
+  pullPolicy: Always
+
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 80
+
+containerPort: 8080
+
+# Plain HTTP via k3s's built-in Traefik ingress controller. Fill in `tls` (and e.g.
+# cert-manager annotations) once you have a certificate source for this host.
+ingress:
+  enabled: true
+  className: traefik
+  annotations: {}
+  host: member-service.k3s.figge.dk
+  tls: []
+  #  - secretName: member-service-tls
+  #    hosts:
+  #      - member-service.k3s.figge.dk
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 768Mi
+
+startupProbe:
+  httpGet:
+    path: /q/health/started
+    port: http
+  failureThreshold: 30
+  periodSeconds: 2
+readinessProbe:
+  httpGet:
+    path: /q/health/ready
+    port: http
+  periodSeconds: 10
+livenessProbe:
+  httpGet:
+    path: /q/health/live
+    port: http
+  periodSeconds: 20
+
+# Non-sensitive configuration, rendered into a ConfigMap and exposed as environment variables.
+# Adjust the hostnames if your Postgres/Keycloak/OTel Services are named differently or live in
+# another namespace.
+config:
+  QUARKUS_DATASOURCE_JDBC_URL: "jdbc:postgresql://postgres.member-service.svc.cluster.local:5432/member_service"
+  QUARKUS_DATASOURCE_REACTIVE_URL: "postgresql://postgres.member-service.svc.cluster.local:5432/member_service"
+  QUARKUS_OIDC_AUTH_SERVER_URL: "http://keycloak.member-service.svc.cluster.local:8080/realms/wandywharang"
+  QUARKUS_OIDC_CLIENT_ID: "member-service"
+  QUARKUS_KEYCLOAK_ADMIN_CLIENT_SERVER_URL: "http://keycloak.member-service.svc.cluster.local:8080"
+  QUARKUS_KEYCLOAK_ADMIN_CLIENT_REALM: "wandywharang"
+  QUARKUS_KEYCLOAK_ADMIN_CLIENT_CLIENT_ID: "member-service"
+  QUARKUS_KEYCLOAK_ADMIN_CLIENT_GRANT_TYPE: "CLIENT_CREDENTIALS"
+  MEMBER_SERVICE_KEYCLOAK_REALM: "wandywharang"
+  QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.member-service.svc.cluster.local:4317"
+
+secrets:
+  # Name of a pre-existing Secret holding the keys below. When set, the chart does not create one.
+  existingSecret: ""
+  # Used only when existingSecret is empty. Supply real values from a gitignored values file
+  # (see values.secret.example.yaml) or with --set; never commit them.
+  values:
+    QUARKUS_DATASOURCE_USERNAME: "member_service"
+    QUARKUS_DATASOURCE_PASSWORD: ""
+    # The "member-service" client's secret in the wandywharang Keycloak realm.
+    QUARKUS_KEYCLOAK_ADMIN_CLIENT_CLIENT_SECRET: ""
+    QUARKUS_OIDC_CREDENTIALS_SECRET: ""
