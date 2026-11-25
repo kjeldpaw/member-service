@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -14,36 +15,33 @@ import static org.hamcrest.Matchers.equalTo;
 /**
  * Lists the Clubs that changeset 1.0.0 seeds, against a database that Liquibase has just migrated and no other test
  * has written to (see {@link FreshDatabaseProfile}). The frontend, tests and support queries rely on these fixed ids.
+ *
+ * <p>The requests use {@link TestRealm#MEMBER_A}'s login, which has the {@code member} role but, on this fresh
+ * database, no Member record. Any logged-in person can read the Clubs, whether or not they are a Member.
  */
 @QuarkusTest
 @TestProfile(SeededClubsIT.FreshDatabaseProfile.class)
 @Tag("integration")
 class SeededClubsIT {
 
-    private static final Map<String, String> SEEDED_CLUBS = Map.of(
-            "0d09a35b-02c4-4279-9416-a5a302613f3f", "Randers Taekwondo Klub",
-            "a4f3fcc3-904b-48c0-9b2b-4225dc6dbe92", "Midtdjurs Taekwondo Klub",
-            "eced5ba8-4097-4284-b69b-4c8ef24838cc", "Taekwondoklubben Hwa Rang Aarhus",
-            "e52a3058-c086-4588-b7cf-4a30f14a10a1", "Nordjysk Taekwondo Center");
-
     @Test
-    void memberListsExactlyTheFourSeededClubsWithTheirFixedIds() {
+    void anyLoggedInPersonListsExactlyTheFourSeededClubsWithTheirFixedIds() {
         given()
                 .auth().oauth2(TestRealm.MEMBER_A.token())
                 .get("/api/v1/clubs")
                 .then().statusCode(200)
-                .body("id", containsInAnyOrder(SEEDED_CLUBS.keySet().toArray()))
-                .body("name", containsInAnyOrder(SEEDED_CLUBS.values().toArray()));
+                .body("id", containsInAnyOrder(SeededClubs.NAMES.keySet().stream().map(UUID::toString).toArray()))
+                .body("name", containsInAnyOrder(SeededClubs.NAMES.values().toArray()));
     }
 
     @Test
-    void memberFetchesEachSeededClubByItsFixedId() {
+    void anyLoggedInPersonFetchesEachSeededClubByItsFixedId() {
         final var token = TestRealm.MEMBER_A.token();
-        SEEDED_CLUBS.forEach((id, name) -> given()
+        SeededClubs.NAMES.forEach((id, name) -> given()
                 .auth().oauth2(token)
                 .get("/api/v1/clubs/{id}", id)
                 .then().statusCode(200)
-                .body("id", equalTo(id))
+                .body("id", equalTo(id.toString()))
                 .body("name", equalTo(name)));
     }
 
