@@ -94,6 +94,7 @@ public class MemberServiceImpl implements MemberService {
     @Override
     public Uni<Member> removeClub(UUID id, UUID clubId) {
         return memberAccess.findForClubChange(id, clubId)
+                .call(() -> findClubs(Set.of(clubId)))
                 .invoke(Unchecked.consumer(member -> {
                     if (member.clubIds().equals(Set.of(clubId))) {
                         throw new LastClubException(id);

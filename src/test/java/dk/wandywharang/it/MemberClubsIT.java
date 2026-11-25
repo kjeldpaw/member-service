@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.Set;
+import java.util.UUID;
 
 import static dk.wandywharang.it.TestRealm.CLUB_A;
 import static dk.wandywharang.it.TestRealm.CLUB_B;
@@ -175,5 +176,45 @@ class MemberClubsIT {
                 .get("/api/v1/members/{id}", member)
                 .then().statusCode(200)
                 .body("clubs.id", containsInAnyOrder(CLUB_A.toString()));
+    }
+
+    @Test
+    void addingOrRemovingAClubOfAnUnknownMemberIsNotFound() {
+        final var unknown = UUID.randomUUID();
+
+        for (final var token : new String[]{TestRealm.ADMIN.token(), TestRealm.INSTRUCTOR_AB.token()}) {
+            given()
+                    .auth().oauth2(token)
+                    .put("/api/v1/members/{id}/clubs/{clubId}", unknown, CLUB_A)
+                    .then().statusCode(404);
+
+            given()
+                    .auth().oauth2(token)
+                    .delete("/api/v1/members/{id}/clubs/{clubId}", unknown, CLUB_A)
+                    .then().statusCode(404);
+        }
+    }
+
+    @Test
+    void adminAddingOrRemovingAnUnknownClubIsNotFoundAndNothingChanges() throws SQLException {
+        final var adminToken = TestRealm.ADMIN.token();
+        final var member = TestDatabase.insertNewMember(dataSource, "Kim", "Lee", Set.of(CLUB_A, CLUB_B));
+        final var unknownClub = UUID.randomUUID();
+
+        given()
+                .auth().oauth2(adminToken)
+                .put("/api/v1/members/{id}/clubs/{clubId}", member, unknownClub)
+                .then().statusCode(404);
+
+        given()
+                .auth().oauth2(adminToken)
+                .delete("/api/v1/members/{id}/clubs/{clubId}", member, unknownClub)
+                .then().statusCode(404);
+
+        given()
+                .auth().oauth2(adminToken)
+                .get("/api/v1/members/{id}", member)
+                .then().statusCode(200)
+                .body("clubs.id", containsInAnyOrder(CLUB_A.toString(), CLUB_B.toString()));
     }
 }
