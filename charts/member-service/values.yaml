@@ -2,10 +2,11 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/kjeldpaw/member-service
-  # Defaults to the chart's appVersion. Prefer a :<commit-sha> tag for reproducible rollouts,
-  # e.g. --set image.tag=$(git rev-parse HEAD).
+  # Defaults to the chart's appVersion, the image released with this chart (ADR 0001). To try an
+  # unreleased build from main, set a :<commit-sha> tag, e.g. --set image.tag=$(git rev-parse HEAD).
   tag: ""
-  pullPolicy: Always
+  # Release and commit-sha tags never move, so an image already on the node is the right one.
+  pullPolicy: IfNotPresent
 
 imagePullSecrets: []
 
