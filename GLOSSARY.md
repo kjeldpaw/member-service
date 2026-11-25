@@ -19,6 +19,28 @@ A person registered in Wandy Wha Rang who belongs to one or more Clubs.
 Not the same as the `member` login role, which any person who can log in has.
 _Avoid_: User, athlete
 
+**Reference**:
+A Member's number in an outside register, either Wandy Wha Rang's or
+Kukkiwon's.
+_Avoid_: Registration, ID
+
+## Grading
+
+**Belt**:
+A Kup or Dan grade a Member can hold, from 10. Kup up to 3. Dan. Each Belt
+has a minimum time a Member holds it before grading to the next.
+_Avoid_: Grade, rank
+
+**Graduation**:
+A Member's promotion to a Belt on a given date, examined by one or more
+Examiners. A Member's Graduations, latest first, form their Graduation
+history.
+_Avoid_: Grading, exam, promotion
+
+**Examiner**:
+A Member who examined a Graduation.
+_Avoid_: Grader, graduatedBy
+
 ## Roles
 
 **Admin**:
