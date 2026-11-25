@@ -23,6 +23,7 @@ containerPort: 8080
 # (health and OpenAPI included) on the websecure entrypoint, and the public one serves only /api on
 # the internet-facing public entrypoint.
 ingress:
+  # Renders both Ingresses, or neither.
   enabled: true
   className: traefik
   host: member-service.k3s.figge.dk
@@ -37,7 +38,6 @@ ingress:
     annotations: {}
   # The public Ingress, serving only /api to the internet.
   public:
-    enabled: true
     # Traefik's internet-facing entrypoint, defined on the k3s side. Always rendered as the
     # router.entrypoints annotation, so the API never falls onto Traefik's default (LAN) entrypoints.
     entrypoint: public

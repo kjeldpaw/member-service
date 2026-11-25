@@ -86,6 +86,9 @@ assert "an entrypoints key in the extra annotations doesn't move the public Ingr
   '[[ "$(grep -c "router.entrypoints:" <<<"$(ingress "$overridden" member-service-public)")" == 1 ]] \
     && has_line "$(ingress "$overridden" member-service-public)" "traefik.ingress.kubernetes.io/router.entrypoints: public"'
 
+disabled="$(render "$chart" --set ingress.enabled=false)" || exit 1
+assert "ingress.enabled=false renders neither Ingress" '[[ "$(ingresses "$disabled")" == 0 ]]'
+
 for side in lan public; do
   rejects "an empty ingress.$side.entrypoint is refused" "ingress.$side.entrypoint is required" \
     --set "ingress.$side.entrypoint="
