@@ -35,6 +35,12 @@ assert "the public Ingress is on Traefik's public entrypoint" \
 assert "the public Ingress serves only the /api prefix" \
   '[[ "$(paths "$public")" == /api ]] && has_line "$public" "pathType: Prefix"'
 
+lan="$(ingress "$defaults" member-service)"
+assert "the LAN Ingress is on Traefik's websecure entrypoint" \
+  'has_line "$lan" "traefik.ingress.kubernetes.io/router.entrypoints: websecure"'
+assert "the LAN Ingress serves the whole app under /" \
+  '[[ "$(paths "$lan")" == / ]] && has_line "$lan" "pathType: Prefix"'
+
 assert "helm lint passes with default values" 'helm lint "$chart" >/dev/null'
 
 finish

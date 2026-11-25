@@ -19,12 +19,15 @@ service:
 
 containerPort: 8080
 
-# Plain HTTP via k3s's built-in Traefik ingress controller. Fill in `tls` (and e.g.
-# cert-manager annotations) once you have a certificate source for this host.
+# Two Ingresses through k3s's built-in Traefik ingress controller: the LAN one serves the whole app
+# (health and OpenAPI included) on the websecure entrypoint, and the public one serves only /api on
+# the internet-facing public entrypoint.
 ingress:
   enabled: true
   className: traefik
-  annotations: {}
+  # Annotations of the LAN Ingress.
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
   host: member-service.k3s.figge.dk
   tls: []
   #  - secretName: member-service-tls
