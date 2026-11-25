@@ -58,25 +58,23 @@ public final class TestDatabase {
     }
 
     /**
-     * Inserts a Member who belongs to the given Clubs.
+     * Inserts a new Member with a random id and an email made from it, who belongs to the given Clubs.
+     *
+     * @return the new Member's id
      */
-    public static UUID insertMember(DataSource dataSource, Set<UUID> clubIds, String firstName, String lastName)
+    public static UUID insertNewMember(DataSource dataSource, String firstName, String lastName, Set<UUID> clubIds)
             throws SQLException {
         final var id = UUID.randomUUID();
-        insertMember(dataSource, id, firstName, lastName, id + "@example.com", clubIds);
+        ensureMember(dataSource, id, firstName, lastName, id + "@example.com", clubIds);
         return id;
     }
 
     /**
-     * Inserts the Member and links them to the given Clubs, skipping whatever already exists.
+     * Inserts the Member unless a Member with that id exists, and links them to the given Clubs unless already
+     * linked.
      */
-    public static void ensureMember(DataSource dataSource, UUID id, String email, Set<UUID> clubIds)
-            throws SQLException {
-        insertMember(dataSource, id, "Test", "Person", email, clubIds);
-    }
-
-    private static void insertMember(DataSource dataSource, UUID id, String firstName, String lastName, String email,
-                                     Set<UUID> clubIds) throws SQLException {
+    public static void ensureMember(DataSource dataSource, UUID id, String firstName, String lastName, String email,
+                                    Set<UUID> clubIds) throws SQLException {
         try (var connection = dataSource.getConnection()) {
             try (var statement = connection.prepareStatement(
                     "INSERT INTO members (id, first_name, last_name, email) VALUES (?, ?, ?, ?) "

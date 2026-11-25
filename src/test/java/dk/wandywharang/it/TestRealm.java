@@ -44,7 +44,7 @@ public final class TestRealm {
         TestDatabase.ensureClub(dataSource, CLUB_B, "Test Club B");
         TestDatabase.ensureClub(dataSource, CLUB_C, "Test Club C");
         for (final var person : MEMBERS) {
-            TestDatabase.ensureMember(dataSource, person.id(), person.username(), person.clubs());
+            TestDatabase.ensureMember(dataSource, person.id(), "Test", "Person", person.username(), person.clubs());
         }
     }
 

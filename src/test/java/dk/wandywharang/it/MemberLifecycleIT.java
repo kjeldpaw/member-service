@@ -165,10 +165,10 @@ class MemberLifecycleIT {
     @Test
     void memberSeesMembersOfEveryClubTheyBelongToAndNotOthers() throws SQLException {
         final var memberToken = TestRealm.MEMBER_BC.token();
-        final var inClubB = TestDatabase.insertMember(dataSource, Set.of(CLUB_B), "In", "B");
-        final var inClubC = TestDatabase.insertMember(dataSource, Set.of(CLUB_C), "In", "C");
-        final var inClubsAAndC = TestDatabase.insertMember(dataSource, Set.of(CLUB_A, CLUB_C), "In", "AC");
-        final var onlyInClubA = TestDatabase.insertMember(dataSource, Set.of(CLUB_A), "Only", "A");
+        final var inClubB = TestDatabase.insertNewMember(dataSource, "In", "B", Set.of(CLUB_B));
+        final var inClubC = TestDatabase.insertNewMember(dataSource, "In", "C", Set.of(CLUB_C));
+        final var inClubsAAndC = TestDatabase.insertNewMember(dataSource, "In", "AC", Set.of(CLUB_A, CLUB_C));
+        final var onlyInClubA = TestDatabase.insertNewMember(dataSource, "Only", "A", Set.of(CLUB_A));
 
         given()
                 .auth().oauth2(memberToken)
@@ -208,8 +208,8 @@ class MemberLifecycleIT {
     @Test
     void instructorCanEditMemberWhoSharesAClubButNotOneWhoSharesNone() throws SQLException {
         final var instructorToken = TestRealm.INSTRUCTOR_AB.token();
-        final var sharesClubB = TestDatabase.insertMember(dataSource, Set.of(CLUB_B, CLUB_C), "Kim", "Lee");
-        final var sharesNone = TestDatabase.insertMember(dataSource, Set.of(CLUB_C), "Sam", "Doe");
+        final var sharesClubB = TestDatabase.insertNewMember(dataSource, "Kim", "Lee", Set.of(CLUB_B, CLUB_C));
+        final var sharesNone = TestDatabase.insertNewMember(dataSource, "Sam", "Doe", Set.of(CLUB_C));
 
         final var updateBody = Map.of(
                 "firstName", "Updated",
@@ -236,8 +236,8 @@ class MemberLifecycleIT {
     void instructorCanRecordGraduationForMemberWhoSharesAClubButNotOneWhoSharesNone() throws SQLException {
         final var instructor = TestRealm.INSTRUCTOR_C;
         final var beltId = TestDatabase.insertBelt(dataSource, "Test Belt " + UUID.randomUUID(), 100);
-        final var sharesClubC = TestDatabase.insertMember(dataSource, Set.of(CLUB_A, CLUB_C), "Kim", "Lee");
-        final var sharesNone = TestDatabase.insertMember(dataSource, Set.of(CLUB_A, CLUB_B), "Sam", "Doe");
+        final var sharesClubC = TestDatabase.insertNewMember(dataSource, "Kim", "Lee", Set.of(CLUB_A, CLUB_C));
+        final var sharesNone = TestDatabase.insertNewMember(dataSource, "Sam", "Doe", Set.of(CLUB_A, CLUB_B));
         final var graduation = Map.of(
                 "date", "2026-06-01",
                 "graduatedBy", Set.of(instructor.id()),
