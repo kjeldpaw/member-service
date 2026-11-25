@@ -27,6 +27,7 @@ import static org.hamcrest.Matchers.equalTo;
 @TestProfile(IntegrationTestProfile.class)
 @Tag("integration")
 class MemberClubsIT {
+    private static final String MEMBER_CLUB = "/api/v1/members/{id}/clubs/{clubId}";
 
     @Inject
     DataSource dataSource;
@@ -43,7 +44,7 @@ class MemberClubsIT {
 
         given()
                 .auth().oauth2(instructorToken)
-                .put("/api/v1/members/{id}/clubs/{clubId}", member, CLUB_A)
+                .put(MEMBER_CLUB, member, CLUB_A)
                 .then().statusCode(200)
                 .body("id", equalTo(member.toString()))
                 .body("clubs.id", containsInAnyOrder(CLUB_A.toString(), CLUB_C.toString()));
@@ -62,7 +63,7 @@ class MemberClubsIT {
 
         given()
                 .auth().oauth2(instructorToken)
-                .delete("/api/v1/members/{id}/clubs/{clubId}", member, CLUB_A)
+                .delete(MEMBER_CLUB, member, CLUB_A)
                 .then().statusCode(200)
                 .body("id", equalTo(member.toString()))
                 .body("clubs.id", containsInAnyOrder(CLUB_C.toString()));
@@ -81,17 +82,17 @@ class MemberClubsIT {
 
         given()
                 .auth().oauth2(instructorToken)
-                .put("/api/v1/members/{id}/clubs/{clubId}", member, CLUB_C)
+                .put(MEMBER_CLUB, member, CLUB_C)
                 .then().statusCode(403);
 
         given()
                 .auth().oauth2(TestRealm.INSTRUCTOR_C.token())
-                .put("/api/v1/members/{id}/clubs/{clubId}", member, CLUB_B)
+                .put(MEMBER_CLUB, member, CLUB_B)
                 .then().statusCode(403);
 
         given()
                 .auth().oauth2(instructorToken)
-                .delete("/api/v1/members/{id}/clubs/{clubId}", member, CLUB_C)
+                .delete(MEMBER_CLUB, member, CLUB_C)
                 .then().statusCode(403);
 
         given()
@@ -108,12 +109,12 @@ class MemberClubsIT {
 
         given()
                 .auth().oauth2(memberToken)
-                .put("/api/v1/members/{id}/clubs/{clubId}", member, CLUB_A)
+                .put(MEMBER_CLUB, member, CLUB_A)
                 .then().statusCode(403);
 
         given()
                 .auth().oauth2(memberToken)
-                .delete("/api/v1/members/{id}/clubs/{clubId}", member, CLUB_B)
+                .delete(MEMBER_CLUB, member, CLUB_B)
                 .then().statusCode(403);
     }
 
@@ -124,13 +125,13 @@ class MemberClubsIT {
 
         given()
                 .auth().oauth2(adminToken)
-                .put("/api/v1/members/{id}/clubs/{clubId}", member, CLUB_C)
+                .put(MEMBER_CLUB, member, CLUB_C)
                 .then().statusCode(200)
                 .body("clubs.id", containsInAnyOrder(CLUB_A.toString(), CLUB_C.toString()));
 
         given()
                 .auth().oauth2(adminToken)
-                .delete("/api/v1/members/{id}/clubs/{clubId}", member, CLUB_A)
+                .delete(MEMBER_CLUB, member, CLUB_A)
                 .then().statusCode(200)
                 .body("clubs.id", containsInAnyOrder(CLUB_C.toString()));
     }
@@ -142,13 +143,13 @@ class MemberClubsIT {
 
         given()
                 .auth().oauth2(instructorToken)
-                .put("/api/v1/members/{id}/clubs/{clubId}", member, CLUB_A)
+                .put(MEMBER_CLUB, member, CLUB_A)
                 .then().statusCode(200)
                 .body("clubs.id", containsInAnyOrder(CLUB_A.toString()));
 
         given()
                 .auth().oauth2(instructorToken)
-                .delete("/api/v1/members/{id}/clubs/{clubId}", member, CLUB_B)
+                .delete(MEMBER_CLUB, member, CLUB_B)
                 .then().statusCode(200)
                 .body("clubs.id", containsInAnyOrder(CLUB_A.toString()));
 
@@ -166,7 +167,7 @@ class MemberClubsIT {
 
         given()
                 .auth().oauth2(adminToken)
-                .delete("/api/v1/members/{id}/clubs/{clubId}", member, CLUB_A)
+                .delete(MEMBER_CLUB, member, CLUB_A)
                 .then().statusCode(409)
                 .contentType("application/json")
                 .body("message", equalTo("Member with id = " + member + " must belong to at least one Club"));
@@ -185,12 +186,12 @@ class MemberClubsIT {
         for (final var token : new String[]{TestRealm.ADMIN.token(), TestRealm.INSTRUCTOR_AB.token()}) {
             given()
                     .auth().oauth2(token)
-                    .put("/api/v1/members/{id}/clubs/{clubId}", unknown, CLUB_A)
+                    .put(MEMBER_CLUB, unknown, CLUB_A)
                     .then().statusCode(404);
 
             given()
                     .auth().oauth2(token)
-                    .delete("/api/v1/members/{id}/clubs/{clubId}", unknown, CLUB_A)
+                    .delete(MEMBER_CLUB, unknown, CLUB_A)
                     .then().statusCode(404);
         }
     }
@@ -203,12 +204,12 @@ class MemberClubsIT {
         for (final var token : new String[]{TestRealm.ADMIN.token(), TestRealm.INSTRUCTOR_AB.token()}) {
             given()
                     .auth().oauth2(token)
-                    .put("/api/v1/members/{id}/clubs/{clubId}", member, unknownClub)
+                    .put(MEMBER_CLUB, member, unknownClub)
                     .then().statusCode(404);
 
             given()
                     .auth().oauth2(token)
-                    .delete("/api/v1/members/{id}/clubs/{clubId}", member, unknownClub)
+                    .delete(MEMBER_CLUB, member, unknownClub)
                     .then().statusCode(404);
         }
 
