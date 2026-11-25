@@ -391,7 +391,7 @@
     </changeSet>
 
     <!-- A Member belongs to one or more Clubs: move each single Club link into the join table, then drop it -->
-    <changeSet id="1.2.0" author="kjeldpaw">
+    <changeSet id="1.1.0" author="kjeldpaw">
         <sql>
             INSERT INTO members_clubs (member_id, club_id)
             SELECT id, club_id FROM members WHERE club_id IS NOT NULL

@@ -21,8 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
- * Migrates a database that still has the single Club column on Members, as development databases do, and checks
- * that every Member keeps their Club. The migration runs in a schema of its own, so it does not disturb the schema
+ * Migrates a database that still has the single Club column on Members, as development databases do, through
+ * changeset 1.1.0 and checks that every Member keeps their Club. The migration runs in a schema of its own, so it does not disturb the schema
  * the application uses.
  */
 @QuarkusTest
@@ -53,6 +53,7 @@ class MemberClubMigrationIT {
                 final var kim = insertSingleClubMember(connection, randers);
                 final var sam = insertSingleClubMember(connection, aarhus);
 
+                // Then 1.1.0, which moves each single Club link into the join table
                 liquibase.update("");
 
                 assertEquals(Map.of(kim, randers, sam, aarhus), clubLinks(connection));
