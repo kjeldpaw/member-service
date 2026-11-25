@@ -39,6 +39,16 @@ assert "CORS allows the frontend's origin by default" \
 other_origin="$(render "$chart" --set cors.allowedOrigin=https://frontend.example)" || exit 1
 assert "cors.allowedOrigin changes the allowed origin" \
   'has_line "$other_origin" "QUARKUS_HTTP_CORS_ORIGINS: \"https://frontend.example\""'
+# rejects <name> <message> [helm args...]: rendering with the args fails, saying <message>.
+rejects() {
+  local out
+  if out="$(render "$chart" "${@:3}" 2>&1)"; then fail "$1" "rendered"
+  elif ! grep -qF -- "$2" <<<"$out"; then fail "$1" "$out"
+  else pass "$1"; fi
+}
+rejects "QUARKUS_HTTP_CORS_ORIGINS under config is refused in favour of cors.allowedOrigin" \
+  "set cors.allowedOrigin instead of config.QUARKUS_HTTP_CORS_ORIGINS" \
+  --set config.QUARKUS_HTTP_CORS_ORIGINS=https://frontend.example
 
 assert "by default no Secret is rendered" '! has_line "$defaults" "kind: Secret"'
 existing="$(render "$chart" --set secrets.existingSecret=from-bitwarden)" || exit 1

@@ -1,3 +1,7 @@
+{{- if hasKey .Values.config "QUARKUS_HTTP_CORS_ORIGINS" }}
+{{- fail "set cors.allowedOrigin instead of config.QUARKUS_HTTP_CORS_ORIGINS: the chart renders QUARKUS_HTTP_CORS_ORIGINS from cors.allowedOrigin" }}
+{{- end }}
+{{- $origin := required "cors.allowedOrigin is required" .Values.cors.allowedOrigin }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -8,4 +12,4 @@ data:
   {{- range $key, $value := .Values.config }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
-  QUARKUS_HTTP_CORS_ORIGINS: {{ required "cors.allowedOrigin is required" .Values.cors.allowedOrigin | quote }}
+  QUARKUS_HTTP_CORS_ORIGINS: {{ $origin | quote }}
