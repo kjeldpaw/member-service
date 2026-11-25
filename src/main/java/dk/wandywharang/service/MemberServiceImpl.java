@@ -86,8 +86,7 @@ public class MemberServiceImpl implements MemberService {
     @Override
     public Uni<Void> delete(UUID id) {
         return memberAccess.findDeletable(id)
-                .call(repository::delete)
-                .call(repository::flush)
+                .call(repository::deleteWithDependents)
                 .chain(member -> registerService.unregister(member.getId().toString()));
     }
 

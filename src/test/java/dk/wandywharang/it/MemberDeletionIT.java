@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -16,6 +17,8 @@ import java.util.UUID;
 import static dk.wandywharang.it.TestRealm.CLUB_A;
 import static dk.wandywharang.it.TestRealm.CLUB_B;
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -76,5 +79,56 @@ class MemberDeletionIT {
                 .then().statusCode(404);
 
         assertFalse(KeycloakTestSupport.userExists(email));
+    }
+
+    @Test
+    void adminDeletesMemberWithReferencesAndGraduationsWhoIsAlsoAnExaminer() throws SQLException {
+        final var adminToken = TestRealm.ADMIN.token();
+        final var email = newEmail();
+        final var memberId = register(email, CLUB_A);
+        final var otherId = TestDatabase.insertNewMember(dataSource, "Sam", "Doe", Set.of(CLUB_A));
+        final var firstBelt = TestDatabase.insertBelt(dataSource, "Test Belt " + UUID.randomUUID(), 100);
+        final var secondBelt = TestDatabase.insertBelt(dataSource, "Test Belt " + UUID.randomUUID(), 101);
+
+        given()
+                .auth().oauth2(adminToken)
+                .contentType("application/json").body(Map.of("type", "KukkiWon", "reference", "K-123"))
+                .post("/api/v1/members/{id}/reference", memberId)
+                .then().statusCode(201);
+        for (final var belt : List.of(firstBelt, secondBelt)) {
+            given()
+                    .auth().oauth2(adminToken)
+                    .contentType("application/json")
+                    .body(Map.of("date", "2026-06-01", "graduatedBy", Set.of(otherId), "beltId", belt))
+                    .post("/api/v1/members/{id}/graduation", memberId)
+                    .then().statusCode(201);
+        }
+        // The Member to delete examined the other Member, alongside an Instructor
+        given()
+                .auth().oauth2(adminToken)
+                .contentType("application/json")
+                .body(Map.of("date", "2026-06-01", "graduatedBy", Set.of(memberId, TestRealm.INSTRUCTOR_AB.id()),
+                        "beltId", firstBelt))
+                .post("/api/v1/members/{id}/graduation", otherId)
+                .then().statusCode(201);
+
+        given()
+                .auth().oauth2(adminToken)
+                .delete("/api/v1/members/{id}", memberId)
+                .then().statusCode(204);
+
+        given()
+                .auth().oauth2(adminToken)
+                .get("/api/v1/members/{id}", memberId)
+                .then().statusCode(404);
+        assertFalse(KeycloakTestSupport.userExists(email));
+
+        // The other Member keeps their Graduation, now examined by the Instructor alone
+        given()
+                .auth().oauth2(adminToken)
+                .get("/api/v1/members/{id}", otherId)
+                .then().statusCode(200)
+                .body("graduation.belt.id", equalTo(firstBelt.toString()))
+                .body("graduation.graduatedBy.id", contains(TestRealm.INSTRUCTOR_AB.id().toString()));
     }
 }
