@@ -85,6 +85,46 @@ class MemberLifecycleIT {
     }
 
     @Test
+    void instructorCanRegisterMemberIntoSeveralOfTheirOwnClubs() {
+        final var email = newEmail();
+
+        given()
+                .auth().oauth2(TestRealm.INSTRUCTOR_AB.token())
+                .contentType("application/json").body(memberBody(email, CLUB_A, CLUB_B))
+                .post("/api/v1/members")
+                .then().statusCode(201)
+                .body("email", equalTo(email))
+                .body("clubs.id", containsInAnyOrder(CLUB_A.toString(), CLUB_B.toString()));
+    }
+
+    @Test
+    void instructorIsRefusedWhenAnyRequestedClubIsNotTheirsAndNothingIsCreatedInKeycloak() {
+        final var email = newEmail();
+
+        given()
+                .auth().oauth2(TestRealm.INSTRUCTOR_AB.token())
+                .contentType("application/json").body(memberBody(email, CLUB_A, CLUB_C))
+                .post("/api/v1/members")
+                .then().statusCode(403);
+
+        // Had the refused request reached Keycloak, the email would now exist there and this would be a conflict
+        given()
+                .auth().oauth2(TestRealm.ADMIN.token())
+                .contentType("application/json").body(memberBody(email, CLUB_A, CLUB_C))
+                .post("/api/v1/members")
+                .then().statusCode(201);
+    }
+
+    @Test
+    void registeringWithoutClubsIsABadRequest() {
+        given()
+                .auth().oauth2(TestRealm.ADMIN.token())
+                .contentType("application/json").body(memberBody(newEmail()))
+                .post("/api/v1/members")
+                .then().statusCode(400);
+    }
+
+    @Test
     void creatingMemberWithoutAuthenticationIsUnauthorized() {
         given()
                 .contentType("application/json")
