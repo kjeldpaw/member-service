@@ -48,8 +48,8 @@ class MemberClubMigrationIT {
 
                 // Only the first changeset, 1.0.0, which has the single Club column
                 liquibase.update(1, "");
-                final var randers = UUID.fromString("0d09a35b-02c4-4279-9416-a5a302613f3f");
-                final var aarhus = UUID.fromString("eced5ba8-4097-4284-b69b-4c8ef24838cc");
+                final var randers = SeededClubs.RANDERS;
+                final var aarhus = SeededClubs.HWA_RANG_AARHUS;
                 final var kim = insertSingleClubMember(connection, randers);
                 final var sam = insertSingleClubMember(connection, aarhus);
 
