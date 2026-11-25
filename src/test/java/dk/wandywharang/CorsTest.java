@@ -23,7 +23,7 @@ import static org.hamcrest.Matchers.nullValue;
 @TestProfile(CorsTest.FrontendOrigin.class)
 class CorsTest {
 
-    static final String FRONTEND = "https://frontend.example";
+    private static final String FRONTEND = "https://frontend.example";
 
     public static class FrontendOrigin implements QuarkusTestProfile {
         @Override
