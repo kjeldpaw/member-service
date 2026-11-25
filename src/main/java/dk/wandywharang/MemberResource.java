@@ -73,6 +73,17 @@ public class MemberResource {
         return memberService.removeClub(id, clubId);
     }
 
+    /**
+     * Deletes the Member entirely, including their Keycloak login. Only Admins may do this: an Instructor removes a
+     * Member from their Club instead.
+     */
+    @DELETE
+    @RolesAllowed("admin")
+    @Path("{id}")
+    public Uni<Void> delete(@PathParam("id") UUID id) {
+        return memberService.delete(id);
+    }
+
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)

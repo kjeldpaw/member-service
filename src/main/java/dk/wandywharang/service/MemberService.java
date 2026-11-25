@@ -27,4 +27,9 @@ public interface MemberService {
      * Removes the Member from the Club, unless they don't belong to it.
      */
     Uni<Member> removeClub(UUID id, UUID clubId);
+
+    /**
+     * Deletes the Member and then their Keycloak user. A Keycloak user that is already gone is not an error.
+     */
+    Uni<Void> delete(UUID id);
 }

@@ -105,6 +105,18 @@ public class MemberServiceImpl implements MemberService {
                 .map(mapper::map);
     }
 
+    /**
+     * The database changes are flushed before the Keycloak user is removed, so a delete that the database refuses
+     * never removes the login.
+     */
+    @WithTransaction
+    @Override
+    public Uni<Void> delete(UUID id) {
+        return memberAccess.findDeletable(id)
+                .call(repository::deleteWithDependents)
+                .chain(member -> registerService.unregister(member.getId().toString()));
+    }
+
     private Uni<Set<ClubEntity>> findClubs(Set<UUID> ids) {
         return clubRepository.findByIds(ids).map(clubs -> {
             final var missing = Ids.notIn(ids, clubs.stream().map(ClubEntity::getId).toList());

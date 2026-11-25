@@ -7,6 +7,7 @@ import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.hibernate.reactive.mutiny.Mutiny;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,6 +23,34 @@ public class MemberRepository implements PanacheRepositoryBase<MemberEntity, UUI
             return Uni.createFrom().item(List.of());
         }
         return find("select distinct m from MemberEntity m join m.clubs c where c.id in ?1", clubIds).list();
+    }
+
+    /**
+     * Deletes the Member with the records that depend on them: their References, their Graduation history, their
+     * Club links and their place as examiner on other Members' Graduations. Those Graduations themselves are kept.
+     */
+    public Uni<Void> deleteWithDependents(MemberEntity member) {
+        final var history = new ArrayList<GraduationEntity>();
+        for (GraduationEntity graduation = member.getGraduation(); graduation != null;
+             graduation = graduation.getPreviousGraduation().orElse(null)) {
+            history.add(graduation);
+        }
+        Uni<?> deletes = getSession()
+                .chain(session -> session.createMutationQuery("delete from ReferenceEntity r where r.member = :member")
+                        .setParameter("member", member)
+                        .executeUpdate())
+                .chain(() -> getSession())
+                .chain(session -> session.createNativeQuery("delete from graduation_members where member_id = :id")
+                        .setParameter("id", member.getId())
+                        .executeUpdate())
+                .chain(() -> delete(member))
+                .chain(this::flush);
+        // Latest first, as each Graduation is referenced by the one after it
+        for (final var graduation : history) {
+            deletes = deletes.chain(() -> getSession()).chain(session -> session.remove(graduation))
+                    .chain(this::flush);
+        }
+        return deletes.replaceWithVoid();
     }
 
     /**
