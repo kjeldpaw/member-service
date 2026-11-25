@@ -6,7 +6,10 @@ metadata:
   labels:
     {{- include "member-service.labels" . | nindent 4 }}
   annotations:
-    {{- toYaml .Values.ingress.public.annotations | nindent 4 }}
+    traefik.ingress.kubernetes.io/router.entrypoints: {{ required "ingress.public.entrypoint is required" .Values.ingress.public.entrypoint }}
+    {{- with omit (.Values.ingress.public.annotations | default dict) "traefik.ingress.kubernetes.io/router.entrypoints" }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 spec:
   {{- with .Values.ingress.className }}
   ingressClassName: {{ . }}

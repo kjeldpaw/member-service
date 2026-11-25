@@ -5,10 +5,11 @@ metadata:
   name: {{ include "member-service.fullname" . }}
   labels:
     {{- include "member-service.labels" . | nindent 4 }}
-  {{- with .Values.ingress.annotations }}
   annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: {{ required "ingress.lan.entrypoint is required" .Values.ingress.lan.entrypoint }}
+    {{- with omit (.Values.ingress.lan.annotations | default dict) "traefik.ingress.kubernetes.io/router.entrypoints" }}
     {{- toYaml . | nindent 4 }}
-  {{- end }}
+    {{- end }}
 spec:
   {{- with .Values.ingress.className }}
   ingressClassName: {{ . }}

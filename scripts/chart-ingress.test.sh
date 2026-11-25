@@ -34,6 +34,14 @@ tls_host() { grep -A1 -E '^[[:space:]]*-? ?hosts:$' <<<"$1" | sed -nE 's/^[[:spa
 # paths <ingress>: the path of each rule, one per line.
 paths() { sed -nE 's/^[[:space:]]*- path: //p' <<<"$1"; }
 
+# rejects <name> <message> [helm args...]: rendering with the args fails, saying <message>.
+rejects() {
+  local out
+  if out="$(render "$chart" "${@:3}" 2>&1)"; then fail "$1" "rendered"
+  elif ! grep -qF -- "$2" <<<"$out"; then fail "$1" "$out"
+  else pass "$1"; fi
+}
+
 assert "default values render two Ingresses" '[[ "$(ingresses "$defaults")" == 2 ]]'
 
 public="$(ingress "$defaults" member-service-public)"
@@ -53,6 +61,34 @@ for name in member-service member-service-public; do
   assert "$name uses TLS with the member-service-tls secret" \
     '[[ "$(tls_secrets "$manifest")" == member-service-tls ]]'
   assert "$name's TLS covers its host" '[[ "$(tls_host "$manifest")" == member-service.k3s.figge.dk ]]'
+done
+
+# The entrypoint comes from ingress.<lan|public>.entrypoint, not from the extra annotations, so
+# clearing those can't drop an Ingress onto Traefik's default entrypoints, which include the LAN ones.
+cleared="$(render "$chart" --set ingress.public.annotations=null --set ingress.lan.annotations=null)" \
+  || exit 1
+assert "clearing the public Ingress's extra annotations keeps it on the public entrypoint" \
+  'has_line "$(ingress "$cleared" member-service-public)" "traefik.ingress.kubernetes.io/router.entrypoints: public"'
+assert "clearing the LAN Ingress's extra annotations keeps it on the websecure entrypoint" \
+  'has_line "$(ingress "$cleared" member-service)" "traefik.ingress.kubernetes.io/router.entrypoints: websecure"'
+assert "no Ingress renders empty annotations" \
+  '! has_line "$cleared" "null" && ! has_line "$cleared" "annotations: {}"'
+
+extra="$(render "$chart" --set ingress.public.annotations.example/extra=yes)" || exit 1
+extra_public="$(ingress "$extra" member-service-public)"
+assert "extra annotations render alongside the public entrypoint" \
+  'has_line "$extra_public" "example/extra: \"yes\"" \
+    && has_line "$extra_public" "traefik.ingress.kubernetes.io/router.entrypoints: public"'
+
+overridden="$(render "$chart" \
+  --set 'ingress.public.annotations.traefik\.ingress\.kubernetes\.io/router\.entrypoints=websecure')" || exit 1
+assert "an entrypoints key in the extra annotations doesn't move the public Ingress" \
+  '[[ "$(grep -c "router.entrypoints:" <<<"$(ingress "$overridden" member-service-public)")" == 1 ]] \
+    && has_line "$(ingress "$overridden" member-service-public)" "traefik.ingress.kubernetes.io/router.entrypoints: public"'
+
+for side in lan public; do
+  rejects "an empty ingress.$side.entrypoint is refused" "ingress.$side.entrypoint is required" \
+    --set "ingress.$side.entrypoint="
 done
 
 assert "helm lint passes with default values" 'helm lint "$chart" >/dev/null'
