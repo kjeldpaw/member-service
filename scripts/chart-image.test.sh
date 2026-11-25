@@ -12,9 +12,7 @@ chart=charts/member-service
 app_version="$(chart_field "$chart" appVersion)"
 # The chart's own image.repository, so the expected image follows values.yaml.
 repository="$(helm show values "$chart" | awk '/^image:/{f=1;next} /^[^[:space:]#]/{f=0} f && $1=="repository:"{print $2}')"
-# secrets.existingSecret is set only because the chart refuses to render without secrets; the
-# image values under test keep their defaults.
-render() { helm template member-service "$chart" --show-only templates/deployment.yaml --set secrets.existingSecret=member-service "$@"; }
+render() { helm template member-service "$chart" --show-only templates/deployment.yaml "$@"; }
 rendered="$(render)" || exit 1
 overridden="$(render --set image.tag=abc123)" || exit 1
 
