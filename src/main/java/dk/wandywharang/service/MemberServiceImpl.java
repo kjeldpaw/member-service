@@ -54,8 +54,9 @@ public class MemberServiceImpl implements MemberService {
 
     /**
      * Creates the Keycloak user first, so its id can be used as the member id. If persisting the member fails, the
-     * Keycloak user is removed again. The setup email is only sent once the member is stored. The Clubs are checked
-     * and found before anything is created, so a forbidden request or an unknown Club never reaches Keycloak.
+     * Keycloak user is removed again on a best-effort basis, so the persist failure is what the caller sees. The setup
+     * email is only sent once the member is stored. The Clubs are checked and found before anything is created, so a
+     * forbidden request or an unknown Club never reaches Keycloak.
      */
     @WithTransaction
     @Override
@@ -64,7 +65,9 @@ public class MemberServiceImpl implements MemberService {
                 .chain(() -> findClubs(request.clubIds()))
                 .chain(clubs -> registerService.register(request)
                         .chain(userId -> persist(UUID.fromString(userId), request, clubs)
-                                .onFailure().call(() -> registerService.unregister(userId))
+                                .onFailure().call(() -> registerService.unregister(userId)
+                                        .onFailure().invoke(e -> log.warnf(e, "Could not remove Keycloak user %s", userId))
+                                        .onFailure().recoverWithNull())
                                 .call(() -> registerService.sendSetupEmail(userId)
                                         .onFailure().invoke(e -> log.warnf(e, "Could not send setup email to Keycloak user %s", userId))
                                         .onFailure().recoverWithNull())));
@@ -107,7 +110,8 @@ public class MemberServiceImpl implements MemberService {
 
     /**
      * The database changes are flushed before the Keycloak user is removed, so a delete that the database refuses
-     * never removes the login.
+     * never removes the login. If Keycloak fails to remove the login, the request fails and the transaction rolls
+     * back, so the Member is never deleted while their login survives.
      */
     @WithTransaction
     @Override

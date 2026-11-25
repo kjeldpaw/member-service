@@ -60,7 +60,7 @@ public class RegisterServiceImpl implements RegisterService {
         return blocking(() -> {
             try (final var response = users().delete(userId)) {
                 if (response.getStatus() != 204 && response.getStatus() != 404) {
-                    log.warnf("Could not delete Keycloak user %s: %d", userId, response.getStatus());
+                    throw new RegisterException(response.getStatus(), response.getStatusInfo().getReasonPhrase());
                 }
             }
             return null;

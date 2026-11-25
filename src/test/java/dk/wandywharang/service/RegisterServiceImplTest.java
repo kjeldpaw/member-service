@@ -132,13 +132,25 @@ class RegisterServiceImplTest {
     }
 
     @Test
-    void unregisterOfFailedDeleteDoesNotFail() {
+    void unregisterOfUnknownUserSucceeds() {
         final var userId = UUID.randomUUID().toString();
-        final var response = response(Response.Status.INTERNAL_SERVER_ERROR);
+        final var response = response(Response.Status.NOT_FOUND);
         when(users.delete(userId)).thenReturn(response);
 
         service.unregister(userId).await().indefinitely();
 
-        verify(users).delete(userId);
+        verify(response).close();
+    }
+
+    @Test
+    void unregisterFailsWithKeycloakStatus() {
+        final var userId = UUID.randomUUID().toString();
+        final var response = response(Response.Status.INTERNAL_SERVER_ERROR);
+        when(response.getStatusInfo()).thenReturn(Response.Status.INTERNAL_SERVER_ERROR);
+        when(users.delete(userId)).thenReturn(response);
+
+        final var failure = assertThrows(RegisterException.class, () -> service.unregister(userId).await().indefinitely());
+        assertEquals(500, failure.getResponse().getStatus());
+        verify(response).close();
     }
 }

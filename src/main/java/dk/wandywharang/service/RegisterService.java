@@ -18,7 +18,8 @@ public interface RegisterService {
     Uni<Void> sendSetupEmail(String userId);
 
     /**
-     * Removes the Keycloak user again, e.g. when persisting the member failed.
+     * Removes the Keycloak user. A user Keycloak does not know counts as removed; any other failure fails the
+     * returned Uni.
      */
     Uni<Void> unregister(String userId);
 }
