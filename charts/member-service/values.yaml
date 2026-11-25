@@ -30,6 +30,9 @@ ingress:
   #  - secretName: member-service-tls
   #    hosts:
   #      - member-service.k3s.figge.dk
+  # A second Ingress that serves only the API to the internet.
+  public:
+    enabled: true
 
 resources:
   requests:
