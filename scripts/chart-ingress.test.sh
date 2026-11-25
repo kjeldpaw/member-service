@@ -89,6 +89,9 @@ assert "an entrypoints key in the extra annotations doesn't move the public Ingr
 disabled="$(render "$chart" --set ingress.enabled=false)" || exit 1
 assert "ingress.enabled=false renders neither Ingress" '[[ "$(ingresses "$disabled")" == 0 ]]'
 
+rejects "an empty ingress.tlsSecretName is refused" "ingress.tlsSecretName is required" \
+  --set ingress.tlsSecretName=
+
 for side in lan public; do
   rejects "an empty ingress.$side.entrypoint is refused" "ingress.$side.entrypoint is required" \
     --set "ingress.$side.entrypoint="
