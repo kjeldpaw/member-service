@@ -53,4 +53,23 @@ class MemberClubsIT {
                 .then().statusCode(200)
                 .body("clubs.id", containsInAnyOrder(CLUB_A.toString(), CLUB_C.toString()));
     }
+
+    @Test
+    void instructorCanRemoveMemberFromOneOfTheirOwnClubs() throws SQLException {
+        final var instructorToken = TestRealm.INSTRUCTOR_AB.token();
+        final var member = TestDatabase.insertNewMember(dataSource, "Kim", "Lee", Set.of(CLUB_A, CLUB_C));
+
+        given()
+                .auth().oauth2(instructorToken)
+                .delete("/api/v1/members/{id}/clubs/{clubId}", member, CLUB_A)
+                .then().statusCode(200)
+                .body("id", equalTo(member.toString()))
+                .body("clubs.id", containsInAnyOrder(CLUB_C.toString()));
+
+        given()
+                .auth().oauth2(TestRealm.ADMIN.token())
+                .get("/api/v1/members/{id}", member)
+                .then().statusCode(200)
+                .body("clubs.id", containsInAnyOrder(CLUB_C.toString()));
+    }
 }

@@ -22,4 +22,9 @@ public interface MemberService {
      * Adds the Member to the Club, unless they already belong to it.
      */
     Uni<Member> addClub(UUID id, UUID clubId);
+
+    /**
+     * Removes the Member from the Club, unless they don't belong to it.
+     */
+    Uni<Member> removeClub(UUID id, UUID clubId);
 }

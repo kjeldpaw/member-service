@@ -65,6 +65,14 @@ public class MemberResource {
         return memberService.addClub(id, clubId);
     }
 
+    @DELETE
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"admin", "instructor"})
+    @Path("{id}/clubs/{clubId}")
+    public Uni<Member> removeClub(@PathParam("id") UUID id, @PathParam("clubId") UUID clubId) {
+        return memberService.removeClub(id, clubId);
+    }
+
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
