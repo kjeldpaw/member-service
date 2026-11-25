@@ -46,7 +46,9 @@ dependencies {
 }
 
 group = "dk.wandywharang"
-version = "1.0.0-SNAPSHOT"
+// The version comes from the build: the release workflow passes -Pversion=X.Y.Z from the tag (ADR 0001).
+// Quarkus reports it as the application version in logs and telemetry. Local builds get a development default.
+version = providers.gradleProperty("version").getOrElse("0.0.0-SNAPSHOT")
 
 java {
     sourceCompatibility = JavaVersion.VERSION_25
