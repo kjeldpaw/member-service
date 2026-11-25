@@ -7,15 +7,13 @@ set -uo pipefail
 
 cd "$(dirname "$0")/.."
 source scripts/lib/testing.sh
+source scripts/lib/chart.sh
 chart=charts/member-service
 
-render() { helm template member-service "$chart" "$@"; }
-# has_line <text> <line>: the text contains the line, ignoring leading indentation.
-has_line() { grep -qxF -- "$2" <<<"$(sed -E 's/^[[:space:]]+//' <<<"$1")"; }
 # secret_ref <rendered>: the Secret the Deployment takes its environment from.
 secret_ref() { grep -A1 -- "- secretRef:" <<<"$1" | sed -nE 's/^[[:space:]]*name: //p'; }
 
-defaults="$(render)" || exit 1
+defaults="$(render "$chart")" || exit 1
 
 # Hostnames from the k3s repo: Bitnami release "postgres" in namespace postgres, the
 # OpenTelemetryCollector "otel" in namespace opentelemetry (Service "otel-collector"), and Keycloak's
@@ -38,16 +36,16 @@ assert "no default points into the member-service namespace" \
 
 assert "CORS allows the frontend's origin by default" \
   'has_line "$defaults" "QUARKUS_HTTP_CORS_ORIGINS: \"https://wandywharang.k3s.figge.dk\""'
-other_origin="$(render --set cors.allowedOrigin=https://frontend.example)" || exit 1
+other_origin="$(render "$chart" --set cors.allowedOrigin=https://frontend.example)" || exit 1
 assert "cors.allowedOrigin changes the allowed origin" \
   'has_line "$other_origin" "QUARKUS_HTTP_CORS_ORIGINS: \"https://frontend.example\""'
 
 assert "by default no Secret is rendered" '! has_line "$defaults" "kind: Secret"'
-existing="$(render --set secrets.existingSecret=from-bitwarden)" || exit 1
+existing="$(render "$chart" --set secrets.existingSecret=from-bitwarden)" || exit 1
 assert "with existingSecret set, no Secret is rendered" '! has_line "$existing" "kind: Secret"'
 assert "with existingSecret set, the Deployment reads that Secret" \
   '[[ "$(secret_ref "$existing")" == from-bitwarden ]]'
-inline="$(render --set secrets.existingSecret= -f "$chart/values.secret.example.yaml")" || exit 1
+inline="$(render "$chart" --set secrets.existingSecret= -f "$chart/values.secret.example.yaml")" || exit 1
 assert "inline secret values still render a Secret for local installs" 'has_line "$inline" "kind: Secret"'
 assert "inline secret values are what the Deployment reads" \
   '[[ "$(secret_ref "$inline")" == member-service-secrets ]]'
