@@ -14,6 +14,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static dk.wandywharang.it.MemberRequests.memberBody;
+import static dk.wandywharang.it.MemberRequests.newEmail;
 import static io.restassured.RestAssured.given;
 import static dk.wandywharang.it.TestRealm.CLUB_A;
 import static dk.wandywharang.it.TestRealm.CLUB_B;
@@ -48,19 +50,6 @@ class MemberLifecycleIT {
     void seed() throws SQLException {
         TestRealm.seed(dataSource);
         clubId = TestDatabase.insertClub(dataSource, "Integration Test Club " + UUID.randomUUID());
-    }
-
-    private static Map<String, Object> memberBody(String email, UUID... clubIds) {
-        return Map.of(
-                "firstName", "Kim",
-                "lastName", "Lee",
-                "address", Map.of("street", "Main Street 1", "city", "Aarhus", "zipCode", "8000"),
-                "email", email,
-                "clubIds", Set.of(clubIds));
-    }
-
-    private static String newEmail() {
-        return "member-" + UUID.randomUUID() + "@example.com";
     }
 
     @Test

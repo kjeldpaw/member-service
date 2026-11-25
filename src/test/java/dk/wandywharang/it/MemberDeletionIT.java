@@ -14,6 +14,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static dk.wandywharang.it.MemberRequests.newEmail;
+import static dk.wandywharang.it.MemberRequests.register;
 import static dk.wandywharang.it.TestRealm.CLUB_A;
 import static dk.wandywharang.it.TestRealm.CLUB_B;
 import static dk.wandywharang.it.TestRealm.CLUB_C;
@@ -39,28 +41,6 @@ class MemberDeletionIT {
     @BeforeEach
     void seed() throws SQLException {
         TestRealm.seed(dataSource);
-    }
-
-    /**
-     * Registers a Member over the API as an Admin, so the Member also has a Keycloak user.
-     */
-    private static String register(String email, UUID... clubIds) {
-        final var body = Map.of(
-                "firstName", "Kim",
-                "lastName", "Lee",
-                "address", Map.of("street", "Main Street 1", "city", "Aarhus", "zipCode", "8000"),
-                "email", email,
-                "clubIds", Set.of(clubIds));
-        return given()
-                .auth().oauth2(TestRealm.ADMIN.token())
-                .contentType("application/json").body(body)
-                .post("/api/v1/members")
-                .then().statusCode(201)
-                .extract().path("id");
-    }
-
-    private static String newEmail() {
-        return "member-" + UUID.randomUUID() + "@example.com";
     }
 
     @Test
@@ -154,7 +134,7 @@ class MemberDeletionIT {
     }
 
     @Test
-    void memberIsRefused() {
+    void memberLoginIsRefusedAndTheMemberIsUnchanged() {
         final var email = newEmail();
         final var memberId = register(email, CLUB_B, CLUB_C);
 
