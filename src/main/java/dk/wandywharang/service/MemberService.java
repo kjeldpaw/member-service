@@ -17,4 +17,9 @@ public interface MemberService {
     Uni<Member> create(CreateMemberRequest request);
 
     Uni<Member> update(UUID id, UpdateMemberRequest request);
+
+    /**
+     * Adds the Member to the Club, unless they already belong to it.
+     */
+    Uni<Member> addClub(UUID id, UUID clubId);
 }

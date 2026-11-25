@@ -78,6 +78,17 @@ public class MemberServiceImpl implements MemberService {
                 .map(mapper::map);
     }
 
+    @WithTransaction
+    @Override
+    public Uni<Member> addClub(UUID id, UUID clubId) {
+        return memberAccess.findForClubChange(id, clubId)
+                .chain(member -> findClubs(Set.of(clubId))
+                        .invoke(clubs -> member.getClubs().addAll(clubs))
+                        .replaceWith(member))
+                .chain(repository::fetchDetails)
+                .map(mapper::map);
+    }
+
     private Uni<Set<ClubEntity>> findClubs(Set<UUID> ids) {
         return clubRepository.findByIds(ids).map(clubs -> {
             final var missing = Ids.notIn(ids, clubs.stream().map(ClubEntity::getId).toList());

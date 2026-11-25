@@ -71,6 +71,15 @@ public class MemberAccess {
         })).replaceWithVoid();
     }
 
+    /**
+     * Loads a Member whose membership of the given Club the current user may change: Admins any Member and any Club,
+     * Instructors any Member but only their own Clubs. The Member need not share a Club with the Instructor, so an
+     * Instructor can pull an existing Member into their Club.
+     */
+    public Uni<MemberEntity> findForClubChange(UUID id, UUID clubId) {
+        return requireEditableClubs(Set.of(clubId)).chain(() -> find(id));
+    }
+
     public Uni<MemberEntity> profile() {
         final var name = securityIdentity.getPrincipal().getName();
         return repository.findById(UUID.fromString(name))

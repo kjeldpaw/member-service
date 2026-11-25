@@ -57,6 +57,14 @@ public class MemberResource {
         return memberService.update(id, request);
     }
 
+    @PUT
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"admin", "instructor"})
+    @Path("{id}/clubs/{clubId}")
+    public Uni<Member> addClub(@PathParam("id") UUID id, @PathParam("clubId") UUID clubId) {
+        return memberService.addClub(id, clubId);
+    }
+
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
