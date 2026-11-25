@@ -135,6 +135,30 @@ class MemberClubsIT {
     }
 
     @Test
+    void addingAClubTheMemberHasOrRemovingOneTheyDoNotHaveChangesNothing() throws SQLException {
+        final var instructorToken = TestRealm.INSTRUCTOR_AB.token();
+        final var member = TestDatabase.insertNewMember(dataSource, "Kim", "Lee", Set.of(CLUB_A));
+
+        given()
+                .auth().oauth2(instructorToken)
+                .put("/api/v1/members/{id}/clubs/{clubId}", member, CLUB_A)
+                .then().statusCode(200)
+                .body("clubs.id", containsInAnyOrder(CLUB_A.toString()));
+
+        given()
+                .auth().oauth2(instructorToken)
+                .delete("/api/v1/members/{id}/clubs/{clubId}", member, CLUB_B)
+                .then().statusCode(200)
+                .body("clubs.id", containsInAnyOrder(CLUB_A.toString()));
+
+        given()
+                .auth().oauth2(instructorToken)
+                .get("/api/v1/members/{id}", member)
+                .then().statusCode(200)
+                .body("clubs.id", containsInAnyOrder(CLUB_A.toString()));
+    }
+
+    @Test
     void removingAMembersLastClubIsAConflictAndTheMemberKeepsIt() throws SQLException {
         final var adminToken = TestRealm.ADMIN.token();
         final var member = TestDatabase.insertNewMember(dataSource, "Kim", "Lee", Set.of(CLUB_A));
