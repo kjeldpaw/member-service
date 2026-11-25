@@ -1,13 +1,11 @@
 package dk.wandywharang.repository;
 
-import dk.wandywharang.entity.GraduationEntity;
 import dk.wandywharang.entity.MemberEntity;
 import io.quarkus.hibernate.reactive.panache.PanacheRepositoryBase;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.hibernate.reactive.mutiny.Mutiny;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,11 +28,7 @@ public class MemberRepository implements PanacheRepositoryBase<MemberEntity, UUI
      * Club links and their place as examiner on other Members' Graduations. Those Graduations themselves are kept.
      */
     public Uni<Void> deleteWithDependents(MemberEntity member) {
-        final var history = new ArrayList<GraduationEntity>();
-        for (GraduationEntity graduation = member.getGraduation(); graduation != null;
-             graduation = graduation.getPreviousGraduation().orElse(null)) {
-            history.add(graduation);
-        }
+        final var history = member.graduationHistory();
         Uni<?> deletes = getSession()
                 .chain(session -> session.createMutationQuery("delete from ReferenceEntity r where r.member = :member")
                         .setParameter("member", member)
@@ -61,8 +55,7 @@ public class MemberRepository implements PanacheRepositoryBase<MemberEntity, UUI
         Uni<?> fetches = member.getReferences() == null
                 ? Uni.createFrom().voidItem()
                 : Mutiny.fetch(member.getReferences());
-        for (GraduationEntity graduation = member.getGraduation(); graduation != null;
-             graduation = graduation.getPreviousGraduation().orElse(null)) {
+        for (final var graduation : member.graduationHistory()) {
             final var graduatedBy = graduation.getGraduatedBy();
             if (graduatedBy != null) {
                 fetches = fetches.chain(() -> Mutiny.fetch(graduatedBy));

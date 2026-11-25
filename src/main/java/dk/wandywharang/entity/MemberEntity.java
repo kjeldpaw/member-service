@@ -5,7 +5,9 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -44,5 +46,16 @@ public class MemberEntity {
      */
     public Set<UUID> clubIds() {
         return clubs.stream().map(ClubEntity::getId).collect(Collectors.toSet());
+    }
+
+    /**
+     * This Member's Graduations, latest first, following each Graduation back to the one before it.
+     */
+    public List<GraduationEntity> graduationHistory() {
+        final var history = new ArrayList<GraduationEntity>();
+        for (var current = graduation; current != null; current = current.getPreviousGraduation().orElse(null)) {
+            history.add(current);
+        }
+        return history;
     }
 }
