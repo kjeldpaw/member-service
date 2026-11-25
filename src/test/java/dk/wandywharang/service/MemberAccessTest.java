@@ -1,7 +1,6 @@
 package dk.wandywharang.service;
 
 import dk.wandywharang.TestData;
-import dk.wandywharang.entity.ClubEntity;
 import dk.wandywharang.entity.MemberEntity;
 import dk.wandywharang.repository.MemberRepository;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -17,7 +16,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.security.Principal;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -52,10 +50,6 @@ class MemberAccessTest {
         }
         final Principal principal = () -> user.getId().toString();
         lenient().when(securityIdentity.getPrincipal()).thenReturn(principal);
-    }
-
-    private static Set<UUID> clubIdsOf(MemberEntity member) {
-        return member.getClubs().stream().map(ClubEntity::getId).collect(Collectors.toSet());
     }
 
     private void loggedInWith(String... roles) {
@@ -128,14 +122,14 @@ class MemberAccessTest {
     void adminCanAddMembersToAnyClub() {
         loggedInWith("admin");
 
-        access.requireEditableClubs(clubIdsOf(otherClubMember)).await().indefinitely();
+        access.requireEditableClubs(otherClubMember.clubIds()).await().indefinitely();
     }
 
     @Test
     void instructorCanAddMembersToOwnClub() {
         loggedInWith("instructor");
 
-        access.requireEditableClubs(clubIdsOf(user)).await().indefinitely();
+        access.requireEditableClubs(user.clubIds()).await().indefinitely();
     }
 
     @Test
@@ -143,8 +137,8 @@ class MemberAccessTest {
         loggedInWith("instructor");
 
         final var failure = assertThrows(ForbiddenException.class,
-                () -> access.requireEditableClubs(clubIdsOf(otherClubMember)).await().indefinitely());
-        assertEquals(String.format("Clubs with ids = %s are not your Clubs", clubIdsOf(otherClubMember)),
+                () -> access.requireEditableClubs(otherClubMember.clubIds()).await().indefinitely());
+        assertEquals(String.format("Clubs with ids = %s are not your Clubs", otherClubMember.clubIds()),
                 failure.getMessage());
     }
 
@@ -153,7 +147,7 @@ class MemberAccessTest {
         loggedInWith("member");
 
         final var failure = assertThrows(ForbiddenException.class,
-                () -> access.requireEditableClubs(clubIdsOf(user)).await().indefinitely());
+                () -> access.requireEditableClubs(user.clubIds()).await().indefinitely());
         assertEquals("Not allowed to edit Members", failure.getMessage());
     }
 }

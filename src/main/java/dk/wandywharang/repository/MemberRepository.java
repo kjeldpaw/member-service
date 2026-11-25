@@ -1,6 +1,5 @@
 package dk.wandywharang.repository;
 
-import dk.wandywharang.entity.ClubEntity;
 import dk.wandywharang.entity.GraduationEntity;
 import dk.wandywharang.entity.MemberEntity;
 import io.quarkus.hibernate.reactive.panache.PanacheRepositoryBase;
@@ -18,7 +17,7 @@ public class MemberRepository implements PanacheRepositoryBase<MemberEntity, UUI
      * Finds the Members who share at least one Club with the given Member, including that Member.
      */
     public Uni<List<MemberEntity>> findSharingClubWith(MemberEntity member) {
-        final var clubIds = member.getClubs().stream().map(ClubEntity::getId).toList();
+        final var clubIds = member.clubIds();
         if (clubIds.isEmpty()) {
             return Uni.createFrom().item(List.of());
         }

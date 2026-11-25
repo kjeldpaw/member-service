@@ -1,6 +1,5 @@
 package dk.wandywharang.service;
 
-import dk.wandywharang.entity.ClubEntity;
 import dk.wandywharang.entity.MemberEntity;
 import dk.wandywharang.repository.MemberRepository;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -16,7 +15,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Loads Members on behalf of the current user. Admins can see and edit all Members. Everyone else can see the Members
@@ -68,7 +66,7 @@ public class MemberAccess {
         }
         return profile().invoke(Unchecked.consumer(profile -> {
             final var notOwn = new TreeSet<>(clubIds);
-            notOwn.removeAll(clubIdsOf(profile));
+            notOwn.removeAll(profile.clubIds());
             if (!notOwn.isEmpty()) {
                 throw new ForbiddenException(String.format("Clubs with ids = %s are not your Clubs", notOwn));
             }
@@ -88,15 +86,11 @@ public class MemberAccess {
 
     private Uni<MemberEntity> requireSharedClub(MemberEntity member, Supplier<RuntimeException> failure) {
         return profile().map(Unchecked.function(profile -> {
-            if (Collections.disjoint(clubIdsOf(profile), clubIdsOf(member))) {
+            if (Collections.disjoint(profile.clubIds(), member.clubIds())) {
                 throw failure.get();
             }
             return member;
         }));
-    }
-
-    private static Set<UUID> clubIdsOf(MemberEntity member) {
-        return member.getClubs().stream().map(ClubEntity::getId).collect(Collectors.toSet());
     }
 
     private static NotFoundException notFound(UUID id) {

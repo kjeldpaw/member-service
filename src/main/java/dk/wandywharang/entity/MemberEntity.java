@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "members")
@@ -37,4 +38,11 @@ public class MemberEntity {
     private GraduationEntity graduation;
     @OneToMany(mappedBy = "member")
     private Set<ReferenceEntity> references;
+
+    /**
+     * The ids of the Clubs this Member belongs to.
+     */
+    public Set<UUID> clubIds() {
+        return clubs.stream().map(ClubEntity::getId).collect(Collectors.toSet());
+    }
 }
