@@ -53,6 +53,16 @@ public class MemberAccess {
     }
 
     /**
+     * Only Admins may delete a Member entirely.
+     */
+    public Uni<MemberEntity> findDeletable(UUID id) {
+        if (!isAdmin()) {
+            return Uni.createFrom().failure(new ForbiddenException("Only Admins may delete Members"));
+        }
+        return find(id);
+    }
+
+    /**
      * Fails unless the current user may add Members to all the given Clubs: Admins to any Club, Instructors to their
      * own.
      */

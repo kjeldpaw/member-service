@@ -17,4 +17,9 @@ public interface MemberService {
     Uni<Member> create(CreateMemberRequest request);
 
     Uni<Member> update(UUID id, UpdateMemberRequest request);
+
+    /**
+     * Deletes the Member and then their Keycloak user. A Keycloak user that is already gone is not an error.
+     */
+    Uni<Void> delete(UUID id);
 }
