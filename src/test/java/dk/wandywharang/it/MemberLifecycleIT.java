@@ -125,6 +125,17 @@ class MemberLifecycleIT {
     }
 
     @Test
+    void registeringAnExistingEmailIsAConflictThatSaysThePersonAlreadyExists() {
+        given()
+                .auth().oauth2(TestRealm.ADMIN.token())
+                .contentType("application/json").body(memberBody(TestRealm.MEMBER_A.username(), CLUB_B))
+                .post("/api/v1/members")
+                .then().statusCode(409)
+                .contentType("application/json")
+                .body("message", equalTo("A person with email " + TestRealm.MEMBER_A.username() + " already exists"));
+    }
+
+    @Test
     void creatingMemberWithoutAuthenticationIsUnauthorized() {
         given()
                 .contentType("application/json")

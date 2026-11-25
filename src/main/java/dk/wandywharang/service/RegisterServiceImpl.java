@@ -34,7 +34,7 @@ public class RegisterServiceImpl implements RegisterService {
         return blocking(() -> {
             try (final var response = users().create(build(request))) {
                 if (response.getStatus() == 409) {
-                    throw new AlreadyExistsException();
+                    throw new AlreadyExistsException(request.email());
                 }
                 if (response.getStatus() != 201) {
                     throw new RegisterException(response.getStatus(), response.getStatusInfo().getReasonPhrase());
