@@ -196,23 +196,24 @@ class MemberClubsIT {
     }
 
     @Test
-    void adminAddingOrRemovingAnUnknownClubIsNotFoundAndNothingChanges() throws SQLException {
-        final var adminToken = TestRealm.ADMIN.token();
+    void addingOrRemovingAnUnknownClubIsNotFoundAndNothingChanges() throws SQLException {
         final var member = TestDatabase.insertNewMember(dataSource, "Kim", "Lee", Set.of(CLUB_A, CLUB_B));
         final var unknownClub = UUID.randomUUID();
 
-        given()
-                .auth().oauth2(adminToken)
-                .put("/api/v1/members/{id}/clubs/{clubId}", member, unknownClub)
-                .then().statusCode(404);
+        for (final var token : new String[]{TestRealm.ADMIN.token(), TestRealm.INSTRUCTOR_AB.token()}) {
+            given()
+                    .auth().oauth2(token)
+                    .put("/api/v1/members/{id}/clubs/{clubId}", member, unknownClub)
+                    .then().statusCode(404);
+
+            given()
+                    .auth().oauth2(token)
+                    .delete("/api/v1/members/{id}/clubs/{clubId}", member, unknownClub)
+                    .then().statusCode(404);
+        }
 
         given()
-                .auth().oauth2(adminToken)
-                .delete("/api/v1/members/{id}/clubs/{clubId}", member, unknownClub)
-                .then().statusCode(404);
-
-        given()
-                .auth().oauth2(adminToken)
+                .auth().oauth2(TestRealm.ADMIN.token())
                 .get("/api/v1/members/{id}", member)
                 .then().statusCode(200)
                 .body("clubs.id", containsInAnyOrder(CLUB_A.toString(), CLUB_B.toString()));

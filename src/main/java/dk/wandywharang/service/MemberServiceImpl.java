@@ -82,22 +82,29 @@ public class MemberServiceImpl implements MemberService {
                 .map(mapper::map);
     }
 
+    /**
+     * The Club is found before the current user's permission for it is checked, so an unknown Club is not found for
+     * everyone.
+     */
     @WithTransaction
     @Override
     public Uni<Member> addClub(UUID id, UUID clubId) {
-        return memberAccess.findForClubChange(id, clubId)
-                .chain(member -> findClubs(Set.of(clubId))
-                        .invoke(clubs -> member.getClubs().addAll(clubs))
-                        .replaceWith(member))
+        return requireClub(clubId)
+                .chain(club -> memberAccess.findForClubChange(id, clubId)
+                        .invoke(member -> member.getClubs().add(club)))
                 .chain(repository::fetchDetails)
                 .map(mapper::map);
     }
 
+    /**
+     * The Club is found before the current user's permission for it is checked, so an unknown Club is not found for
+     * everyone.
+     */
     @WithTransaction
     @Override
     public Uni<Member> removeClub(UUID id, UUID clubId) {
-        return memberAccess.findForClubChange(id, clubId)
-                .call(() -> findClubs(Set.of(clubId)))
+        return requireClub(clubId)
+                .chain(() -> memberAccess.findForClubChange(id, clubId))
                 .invoke(Unchecked.consumer(member -> {
                     if (member.clubIds().equals(Set.of(clubId))) {
                         throw new LastClubException(id);
@@ -119,6 +126,10 @@ public class MemberServiceImpl implements MemberService {
         return memberAccess.findDeletable(id)
                 .call(repository::deleteWithDependents)
                 .chain(member -> registerService.unregister(member.getId().toString()));
+    }
+
+    private Uni<ClubEntity> requireClub(UUID id) {
+        return findClubs(Set.of(id)).map(clubs -> clubs.iterator().next());
     }
 
     private Uni<Set<ClubEntity>> findClubs(Set<UUID> ids) {
