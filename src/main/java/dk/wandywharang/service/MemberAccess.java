@@ -10,12 +10,15 @@ import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
- * Loads members on behalf of the current user. Admins can see and edit all members, instructors can edit members of
- * their own club, and everyone else can only see members of their own club.
+ * Loads Members on behalf of the current user. Admins can see and edit all Members. Everyone else can see the Members
+ * who share at least one Club with them, and Instructors can also edit those. A user's Clubs are the Clubs of their
+ * own Member record.
  */
 @RequestScoped
 @RequiredArgsConstructor
@@ -35,7 +38,7 @@ public class MemberAccess {
         if (isAdmin()) {
             return find(id);
         }
-        return find(id).chain(member -> requireSameClub(member, () -> notFound(id)));
+        return find(id).chain(member -> requireSharedClub(member, () -> notFound(id)));
     }
 
     public Uni<MemberEntity> findEditable(UUID id) {
@@ -43,25 +46,27 @@ public class MemberAccess {
             return find(id);
         }
         if (!isInstructor()) {
-            return Uni.createFrom().failure(new ForbiddenException("Not allowed to edit members"));
+            return Uni.createFrom().failure(new ForbiddenException("Not allowed to edit Members"));
         }
-        return find(id).chain(member -> requireSameClub(member,
-                () -> new ForbiddenException(String.format("Member with id = %s is not in your club", id))));
+        return find(id).chain(member -> requireSharedClub(member,
+                () -> new ForbiddenException(String.format("Member with id = %s shares no Club with you", id))));
     }
 
     /**
-     * Fails unless the current user may add members to the given club: admins to any club, instructors to their own.
+     * Fails unless the current user may add Members to all the given Clubs: Admins to any Club, Instructors to their
+     * own.
      */
-    public Uni<Void> requireEditableClub(UUID clubId) {
+    public Uni<Void> requireEditableClubs(Set<UUID> clubIds) {
         if (isAdmin()) {
             return Uni.createFrom().voidItem();
         }
         if (!isInstructor()) {
-            return Uni.createFrom().failure(new ForbiddenException("Not allowed to edit members"));
+            return Uni.createFrom().failure(new ForbiddenException("Not allowed to edit Members"));
         }
         return profile().invoke(Unchecked.consumer(profile -> {
-            if (!profile.getClub().getId().equals(clubId)) {
-                throw new ForbiddenException(String.format("Club with id = %s is not your club", clubId));
+            final var notOwn = Ids.notIn(clubIds, profile.clubIds());
+            if (!notOwn.isEmpty()) {
+                throw new ForbiddenException(String.format("Clubs with ids = %s are not your Clubs", notOwn));
             }
         })).replaceWithVoid();
     }
@@ -77,9 +82,9 @@ public class MemberAccess {
                 .onItem().ifNull().failWith(() -> notFound(id));
     }
 
-    private Uni<MemberEntity> requireSameClub(MemberEntity member, Supplier<RuntimeException> failure) {
+    private Uni<MemberEntity> requireSharedClub(MemberEntity member, Supplier<RuntimeException> failure) {
         return profile().map(Unchecked.function(profile -> {
-            if (!profile.getClub().getId().equals(member.getClub().getId())) {
+            if (Collections.disjoint(profile.clubIds(), member.clubIds())) {
                 throw failure.get();
             }
             return member;

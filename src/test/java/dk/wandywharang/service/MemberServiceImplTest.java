@@ -22,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -71,6 +72,10 @@ class MemberServiceImplTest {
     }
 
     private CreateMemberRequest createRequest() {
+        return createRequest(Set.of(club.getId()));
+    }
+
+    private static CreateMemberRequest createRequest(Set<UUID> clubIds) {
         return CreateMemberRequest.builder()
                 .firstName("Kim")
                 .lastName("Lee")
@@ -78,7 +83,7 @@ class MemberServiceImplTest {
                 .phone(Optional.empty())
                 .email("kim@example.com")
                 .dateOfBirth(Optional.empty())
-                .clubId(club.getId())
+                .clubIds(clubIds)
                 .build();
     }
 
@@ -98,10 +103,9 @@ class MemberServiceImplTest {
     @Test
     void othersSeeMembersOfOwnClub() {
         final var profile = TestData.member(club);
-        final var query = query(List.of(profile));
         when(memberAccess.isAdmin()).thenReturn(false);
         when(memberAccess.profile()).thenReturn(Uni.createFrom().item(profile));
-        when(repository.find("club.id", club.getId())).thenReturn(query);
+        when(repository.findSharingClubWith(profile)).thenReturn(Uni.createFrom().item(List.of(profile)));
 
         final var result = service.findAll().await().indefinitely();
 
@@ -122,9 +126,9 @@ class MemberServiceImplTest {
         final var userId = UUID.randomUUID();
         final var entity = new MemberEntity();
         final var request = createRequest();
-        when(memberAccess.requireEditableClub(club.getId())).thenReturn(Uni.createFrom().voidItem());
+        when(memberAccess.requireEditableClubs(Set.of(club.getId()))).thenReturn(Uni.createFrom().voidItem());
         when(registerService.register(request)).thenReturn(Uni.createFrom().item(userId.toString()));
-        when(clubRepository.findById(club.getId())).thenReturn(Uni.createFrom().item(club));
+        when(clubRepository.findByIds(Set.of(club.getId()))).thenReturn(Uni.createFrom().item(Set.of(club)));
         when(mapper.map(request)).thenReturn(entity);
         when(repository.persist(any(MemberEntity.class))).thenAnswer(invocation -> Uni.createFrom().item(invocation.<MemberEntity>getArgument(0)));
         when(registerService.sendSetupEmail(userId.toString())).thenReturn(Uni.createFrom().voidItem());
@@ -133,7 +137,7 @@ class MemberServiceImplTest {
 
         assertSame(dto, result);
         assertEquals(userId, entity.getId());
-        assertSame(club, entity.getClub());
+        assertEquals(Set.of(club), entity.getClubs());
         verify(registerService).sendSetupEmail(userId.toString());
         verify(registerService, never()).unregister(anyString());
     }
@@ -141,22 +145,36 @@ class MemberServiceImplTest {
     @Test
     void createInForbiddenClubNeverReachesKeycloak() {
         final var request = createRequest();
-        when(memberAccess.requireEditableClub(club.getId())).thenReturn(Uni.createFrom().failure(new ForbiddenException()));
+        when(memberAccess.requireEditableClubs(Set.of(club.getId()))).thenReturn(Uni.createFrom().failure(new ForbiddenException()));
 
         assertThrows(ForbiddenException.class, () -> service.create(request).await().indefinitely());
         verifyNoInteractions(registerService, clubRepository);
     }
 
     @Test
+    void createInUnknownClubIsNotFoundAndNeverReachesKeycloak() {
+        final var unknown = UUID.randomUUID();
+        final var request = createRequest(Set.of(club.getId(), unknown));
+        when(memberAccess.requireEditableClubs(request.clubIds())).thenReturn(Uni.createFrom().voidItem());
+        when(clubRepository.findByIds(request.clubIds())).thenReturn(Uni.createFrom().item(Set.of(club)));
+
+        final var failure = assertThrows(NotFoundException.class, () -> service.create(request).await().indefinitely());
+        assertEquals(String.format("Clubs with ids = [%s] not found", unknown), failure.getMessage());
+        verifyNoInteractions(registerService);
+    }
+
+    @Test
     void createRemovesKeycloakUserWhenPersistingFails() {
         final var userId = UUID.randomUUID().toString();
         final var request = createRequest();
-        when(memberAccess.requireEditableClub(club.getId())).thenReturn(Uni.createFrom().voidItem());
+        when(memberAccess.requireEditableClubs(Set.of(club.getId()))).thenReturn(Uni.createFrom().voidItem());
+        when(clubRepository.findByIds(Set.of(club.getId()))).thenReturn(Uni.createFrom().item(Set.of(club)));
         when(registerService.register(request)).thenReturn(Uni.createFrom().item(userId));
-        when(clubRepository.findById(club.getId())).thenReturn(Uni.createFrom().nullItem());
+        when(mapper.map(request)).thenReturn(new MemberEntity());
+        when(repository.persist(any(MemberEntity.class))).thenReturn(Uni.createFrom().failure(new IllegalStateException("Database down")));
         when(registerService.unregister(userId)).thenReturn(Uni.createFrom().voidItem());
 
-        assertThrows(NotFoundException.class, () -> service.create(request).await().indefinitely());
+        assertThrows(IllegalStateException.class, () -> service.create(request).await().indefinitely());
         verify(registerService).unregister(userId);
         verify(registerService, never()).sendSetupEmail(anyString());
     }
@@ -165,9 +183,9 @@ class MemberServiceImplTest {
     void createSucceedsWhenSetupEmailFails() {
         final var userId = UUID.randomUUID().toString();
         final var request = createRequest();
-        when(memberAccess.requireEditableClub(club.getId())).thenReturn(Uni.createFrom().voidItem());
+        when(memberAccess.requireEditableClubs(Set.of(club.getId()))).thenReturn(Uni.createFrom().voidItem());
         when(registerService.register(request)).thenReturn(Uni.createFrom().item(userId));
-        when(clubRepository.findById(club.getId())).thenReturn(Uni.createFrom().item(club));
+        when(clubRepository.findByIds(Set.of(club.getId()))).thenReturn(Uni.createFrom().item(Set.of(club)));
         when(mapper.map(request)).thenReturn(new MemberEntity());
         when(repository.persist(any(MemberEntity.class))).thenAnswer(invocation -> Uni.createFrom().item(invocation.<MemberEntity>getArgument(0)));
         when(registerService.sendSetupEmail(userId)).thenReturn(Uni.createFrom().failure(new RuntimeException("No SMTP server")));

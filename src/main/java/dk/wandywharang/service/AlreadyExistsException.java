@@ -1,10 +1,11 @@
 package dk.wandywharang.service;
 
-import jakarta.ws.rs.WebApplicationException;
+/**
+ * The person being registered already exists, so the client can offer to add them to a Club instead.
+ */
+public class AlreadyExistsException extends RuntimeException {
 
-public class AlreadyExistsException extends WebApplicationException {
-
-    public AlreadyExistsException() {
-        super("User already exists", 409);
+    public AlreadyExistsException(String email) {
+        super(String.format("A person with email %s already exists", email));
     }
 }

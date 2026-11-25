@@ -8,6 +8,7 @@ import dk.wandywharang.api.ReferenceType;
 import dk.wandywharang.api.UpdateGraduationRequest;
 import dk.wandywharang.api.UpdateMemberRequest;
 import dk.wandywharang.api.UpdateReferenceRequest;
+import dk.wandywharang.service.AlreadyExistsException;
 import dk.wandywharang.service.GraduationService;
 import dk.wandywharang.service.MemberService;
 import dk.wandywharang.service.ReferenceService;
@@ -59,7 +60,7 @@ class MemberResourceTest {
                 "lastName", "Lee",
                 "address", Map.of("street", "Main Street 1", "city", "Aarhus", "zipCode", "8000"),
                 "email", "kim@example.com",
-                "clubId", CLUB_ID);
+                "clubIds", List.of(CLUB_ID));
     }
 
     private static Map<String, Object> graduationBody() {
@@ -120,7 +121,7 @@ class MemberResourceTest {
                 .phone(Optional.empty())
                 .email("kim@example.com")
                 .dateOfBirth(Optional.empty())
-                .clubId(CLUB_ID)
+                .clubIds(Set.of(CLUB_ID))
                 .build());
     }
 
@@ -131,6 +132,18 @@ class MemberResourceTest {
 
         given().contentType("application/json").body(memberBody()).post()
                 .then().statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void createOfExistingPersonIsAConflictThatSaysSo() {
+        when(memberService.create(any()))
+                .thenReturn(Uni.createFrom().failure(new AlreadyExistsException("kim@example.com")));
+
+        given().contentType("application/json").body(memberBody()).post()
+                .then().statusCode(409)
+                .contentType("application/json")
+                .body("message", equalTo("A person with email kim@example.com already exists"));
     }
 
     @Test

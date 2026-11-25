@@ -2,6 +2,7 @@ package dk.wandywharang.it;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -43,17 +44,55 @@ public final class TestDatabase {
         return id;
     }
 
-    public static void insertMember(DataSource dataSource, UUID id, UUID clubId, String firstName, String lastName,
-                                     String email) throws SQLException {
+    /**
+     * Inserts the Club unless a Club with that id exists.
+     */
+    public static void ensureClub(DataSource dataSource, UUID id, String name) throws SQLException {
         try (var connection = dataSource.getConnection();
              var statement = connection.prepareStatement(
-                     "INSERT INTO members (id, first_name, last_name, email, club_id) VALUES (?, ?, ?, ?, ?)")) {
+                     "INSERT INTO clubs (id, name) VALUES (?, ?) ON CONFLICT (id) DO NOTHING")) {
             statement.setObject(1, id);
-            statement.setString(2, firstName);
-            statement.setString(3, lastName);
-            statement.setString(4, email);
-            statement.setObject(5, clubId);
+            statement.setString(2, name);
             statement.executeUpdate();
+        }
+    }
+
+    /**
+     * Inserts a new Member with a random id and an email made from it, who belongs to the given Clubs.
+     *
+     * @return the new Member's id
+     */
+    public static UUID insertNewMember(DataSource dataSource, String firstName, String lastName, Set<UUID> clubIds)
+            throws SQLException {
+        final var id = UUID.randomUUID();
+        ensureMember(dataSource, id, firstName, lastName, id + "@example.com", clubIds);
+        return id;
+    }
+
+    /**
+     * Inserts the Member unless a Member with that id exists, and links them to the given Clubs unless already
+     * linked.
+     */
+    public static void ensureMember(DataSource dataSource, UUID id, String firstName, String lastName, String email,
+                                    Set<UUID> clubIds) throws SQLException {
+        try (var connection = dataSource.getConnection()) {
+            try (var statement = connection.prepareStatement(
+                    "INSERT INTO members (id, first_name, last_name, email) VALUES (?, ?, ?, ?) "
+                            + "ON CONFLICT (id) DO NOTHING")) {
+                statement.setObject(1, id);
+                statement.setString(2, firstName);
+                statement.setString(3, lastName);
+                statement.setString(4, email);
+                statement.executeUpdate();
+            }
+            for (final var clubId : clubIds) {
+                try (var statement = connection.prepareStatement(
+                        "INSERT INTO members_clubs (member_id, club_id) VALUES (?, ?) ON CONFLICT DO NOTHING")) {
+                    statement.setObject(1, id);
+                    statement.setObject(2, clubId);
+                    statement.executeUpdate();
+                }
+            }
         }
     }
 }
