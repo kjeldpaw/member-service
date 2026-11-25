@@ -64,6 +64,11 @@ tasks.withType<JavaCompile> {
 // Integration tests (tagged "integration") run against real Postgres and Keycloak containers started by Quarkus Dev
 // Services via Testcontainers. They live alongside the unit tests but are excluded from the default `test` task
 // since they need Docker and are much slower; run them explicitly with `./gradlew integrationTest`.
+tasks.withType<Test> {
+    // ApplicationVersionTest checks that Quarkus reports this version as quarkus.application.version.
+    systemProperty("gradle.project.version", version.toString())
+}
+
 tasks.test {
     useJUnitPlatform {
         excludeTags("integration")
