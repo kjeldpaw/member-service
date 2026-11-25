@@ -23,6 +23,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * End-to-end tests that run the application against real Postgres and Keycloak containers, started by Quarkus Dev
@@ -107,12 +109,28 @@ class MemberLifecycleIT {
                 .post("/api/v1/members")
                 .then().statusCode(403);
 
-        // Had the refused request reached Keycloak, the email would now exist there and this would be a conflict
+        assertFalse(KeycloakTestSupport.userExists(email));
+
+        // The same email can still be registered, and then the check does find it
         given()
                 .auth().oauth2(TestRealm.ADMIN.token())
                 .contentType("application/json").body(memberBody(email, CLUB_A, CLUB_C))
                 .post("/api/v1/members")
                 .then().statusCode(201);
+        assertTrue(KeycloakTestSupport.userExists(email));
+    }
+
+    @Test
+    void adminRegisteringIntoAnUnknownClubIsNotFoundAndNothingIsCreatedInKeycloak() {
+        final var email = newEmail();
+
+        given()
+                .auth().oauth2(TestRealm.ADMIN.token())
+                .contentType("application/json").body(memberBody(email, CLUB_A, UUID.randomUUID()))
+                .post("/api/v1/members")
+                .then().statusCode(404);
+
+        assertFalse(KeycloakTestSupport.userExists(email));
     }
 
     @Test

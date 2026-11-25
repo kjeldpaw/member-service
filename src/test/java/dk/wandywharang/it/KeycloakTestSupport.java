@@ -1,7 +1,9 @@
 package dk.wandywharang.it;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.arc.Arc;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.keycloak.admin.client.Keycloak;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -34,6 +36,16 @@ public final class KeycloakTestSupport {
                 .when().post(authServerUrl + "/protocol/openid-connect/token")
                 .then().statusCode(200)
                 .extract().path("access_token");
+    }
+
+    /**
+     * Asks Keycloak, through the application's admin client, whether a user with exactly this email exists in the
+     * realm that Members are registered in.
+     */
+    public static boolean userExists(String email) {
+        final var realm = ConfigProvider.getConfig().getValue("member-service.keycloak.realm", String.class);
+        final var keycloak = Arc.container().instance(Keycloak.class).get();
+        return !keycloak.realm(realm).users().searchByEmail(email, true).isEmpty();
     }
 
     /**
