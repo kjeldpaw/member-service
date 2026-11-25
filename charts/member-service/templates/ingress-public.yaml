@@ -5,6 +5,8 @@ metadata:
   name: {{ include "member-service.fullname" . }}-public
   labels:
     {{- include "member-service.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.ingress.public.annotations | nindent 4 }}
 spec:
   {{- with .Values.ingress.className }}
   ingressClassName: {{ . }}

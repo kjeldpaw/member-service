@@ -15,7 +15,25 @@ defaults="$(render "$chart")" || exit 1
 # ingresses <rendered>: how many Ingresses the manifests hold.
 ingresses() { grep -cxF "kind: Ingress" <<<"$1"; }
 
+# ingress <rendered> <name>: the manifest of the Ingress with that name.
+ingress() {
+  awk -v name="$2" '
+    /^---/ { if (kind && named) printf "%s", doc; doc = ""; kind = named = 0; next }
+    { doc = doc $0 "\n" }
+    $0 == "kind: Ingress" { kind = 1 }
+    $0 == "  name: " name { named = 1 }
+    END { if (kind && named) printf "%s", doc }' <<<"$1"
+}
+# paths <ingress>: the path of each rule, one per line.
+paths() { sed -nE 's/^[[:space:]]*- path: //p' <<<"$1"; }
+
 assert "default values render two Ingresses" '[[ "$(ingresses "$defaults")" == 2 ]]'
+
+public="$(ingress "$defaults" member-service-public)"
+assert "the public Ingress is on Traefik's public entrypoint" \
+  'has_line "$public" "traefik.ingress.kubernetes.io/router.entrypoints: public"'
+assert "the public Ingress serves only the /api prefix" \
+  '[[ "$(paths "$public")" == /api ]] && has_line "$public" "pathType: Prefix"'
 
 assert "helm lint passes with default values" 'helm lint "$chart" >/dev/null'
 
