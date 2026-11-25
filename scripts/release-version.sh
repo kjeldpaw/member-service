@@ -14,8 +14,11 @@ if [[ $# -lt 1 || $# -gt 2 ]]; then
   exit 2
 fi
 
+source "$(dirname "$0")/lib/chart.sh"
+
 tag="$1"
-chart_yaml="${2:-$(dirname "$0")/../charts/member-service}/Chart.yaml"
+chart_dir="${2:-$(dirname "$0")/../charts/member-service}"
+chart_yaml="$chart_dir/Chart.yaml"
 
 if [[ ! "$tag" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
   echo "error: tag '$tag' is not vX.Y.Z" >&2
@@ -28,14 +31,9 @@ if [[ ! -f "$chart_yaml" ]]; then
   exit 1
 fi
 
-# Reads a top-level scalar from Chart.yaml, without surrounding quotes.
-field() {
-  sed -n -E "s/^$1:[[:space:]]*[\"']?([^\"'#[:space:]]*)[\"']?[[:space:]]*(#.*)?$/\1/p" "$chart_yaml" | head -n 1
-}
-
 status=0
 for key in version appVersion; do
-  value="$(field "$key")"
+  value="$(chart_field "$chart_dir" "$key")"
   if [[ "$value" != "$version" ]]; then
     echo "error: tag $tag needs $key: $version in $chart_yaml, found '$value'" >&2
     status=1
