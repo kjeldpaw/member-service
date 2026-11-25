@@ -22,8 +22,8 @@ public interface MemberMapper {
     @Mapping(target = "dateOfBirth", expression = "java(request.dateOfBirth().orElse(null))")
     MemberEntity map(CreateMemberRequest request);
 
-    // The email is the Keycloak username and the Clubs change only through their own endpoints, so an update
-    // changes neither
+    // The email is the Keycloak username, so an update doesn't change it.
+    // Updating a Member doesn't change their Clubs.
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "email", ignore = true)
     @Mapping(target = "clubs", ignore = true)

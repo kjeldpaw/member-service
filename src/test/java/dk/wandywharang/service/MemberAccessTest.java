@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -80,14 +81,19 @@ class MemberAccessTest {
     void instructorCannotEditMemberOfOtherClub() {
         loggedInWith("instructor");
 
-        assertThrows(ForbiddenException.class, () -> access.findEditable(otherClubMember.getId()).await().indefinitely());
+        final var failure = assertThrows(ForbiddenException.class,
+                () -> access.findEditable(otherClubMember.getId()).await().indefinitely());
+        assertEquals(String.format("Member with id = %s shares no Club with you", otherClubMember.getId()),
+                failure.getMessage());
     }
 
     @Test
     void memberCannotEditMembers() {
         loggedInWith("member");
 
-        assertThrows(ForbiddenException.class, () -> access.findEditable(sameClubMember.getId()).await().indefinitely());
+        final var failure = assertThrows(ForbiddenException.class,
+                () -> access.findEditable(sameClubMember.getId()).await().indefinitely());
+        assertEquals("Not allowed to edit Members", failure.getMessage());
     }
 
     @Test
@@ -136,15 +142,18 @@ class MemberAccessTest {
     void instructorCannotAddMembersToOtherClub() {
         loggedInWith("instructor");
 
-        assertThrows(ForbiddenException.class,
+        final var failure = assertThrows(ForbiddenException.class,
                 () -> access.requireEditableClubs(clubIdsOf(otherClubMember)).await().indefinitely());
+        assertEquals(String.format("Clubs with ids = %s are not your Clubs", clubIdsOf(otherClubMember)),
+                failure.getMessage());
     }
 
     @Test
     void memberCannotAddMembers() {
         loggedInWith("member");
 
-        assertThrows(ForbiddenException.class,
+        final var failure = assertThrows(ForbiddenException.class,
                 () -> access.requireEditableClubs(clubIdsOf(user)).await().indefinitely());
+        assertEquals("Not allowed to edit Members", failure.getMessage());
     }
 }

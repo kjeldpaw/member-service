@@ -49,10 +49,10 @@ public class MemberAccess {
             return find(id);
         }
         if (!isInstructor()) {
-            return Uni.createFrom().failure(new ForbiddenException("Not allowed to edit members"));
+            return Uni.createFrom().failure(new ForbiddenException("Not allowed to edit Members"));
         }
         return find(id).chain(member -> requireSharedClub(member,
-                () -> new ForbiddenException(String.format("Member with id = %s shares no club with you", id))));
+                () -> new ForbiddenException(String.format("Member with id = %s shares no Club with you", id))));
     }
 
     /**
@@ -64,13 +64,13 @@ public class MemberAccess {
             return Uni.createFrom().voidItem();
         }
         if (!isInstructor()) {
-            return Uni.createFrom().failure(new ForbiddenException("Not allowed to edit members"));
+            return Uni.createFrom().failure(new ForbiddenException("Not allowed to edit Members"));
         }
         return profile().invoke(Unchecked.consumer(profile -> {
             final var notOwn = new TreeSet<>(clubIds);
             notOwn.removeAll(clubIdsOf(profile));
             if (!notOwn.isEmpty()) {
-                throw new ForbiddenException(String.format("Clubs with ids = %s are not your clubs", notOwn));
+                throw new ForbiddenException(String.format("Clubs with ids = %s are not your Clubs", notOwn));
             }
         })).replaceWithVoid();
     }
