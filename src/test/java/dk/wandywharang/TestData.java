@@ -10,6 +10,7 @@ import dk.wandywharang.entity.MemberEntity;
 
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -33,7 +34,7 @@ public final class TestData {
         member.setFirstName("Kim");
         member.setLastName("Lee");
         member.setEmail("kim@example.com");
-        member.setClub(club);
+        member.setClubs(new HashSet<>(Set.of(club)));
         member.setReferences(new HashSet<>());
         return member;
     }
@@ -59,7 +60,7 @@ public final class TestData {
                 .phone(Optional.empty())
                 .email("kim@example.com")
                 .dateOfBirth(Optional.empty())
-                .club(new Club(UUID.randomUUID(), "Taekwondo Club", null))
+                .clubs(List.of(new Club(UUID.randomUUID(), "Taekwondo Club", null)))
                 .graduation(Optional.empty())
                 .references(Set.of())
                 .build();

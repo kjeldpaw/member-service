@@ -62,7 +62,7 @@ class GraduationServiceImplTest {
     void setUp() {
         service = new GraduationServiceImpl(memberAccess, memberRepository, repository, beltRepository, mapper, memberMapper);
         member = TestData.member(TestData.club());
-        examiner = TestData.member(member.getClub());
+        examiner = TestData.member(member.getClubs().iterator().next());
         belt = TestData.belt();
         dto = TestData.member();
         lenient().when(memberAccess.findEditable(member.getId())).thenReturn(Uni.createFrom().item(member));

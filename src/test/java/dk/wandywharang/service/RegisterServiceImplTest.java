@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -58,7 +59,7 @@ class RegisterServiceImplTest {
                 .phone(Optional.empty())
                 .email("kim@example.com")
                 .dateOfBirth(Optional.empty())
-                .clubId(UUID.randomUUID())
+                .clubIds(Set.of(UUID.randomUUID()))
                 .build();
     }
 

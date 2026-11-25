@@ -9,12 +9,20 @@ import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
+import static dk.wandywharang.it.TestRealm.CLUB_A;
+import static dk.wandywharang.it.TestRealm.CLUB_B;
+import static dk.wandywharang.it.TestRealm.CLUB_C;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.not;
 
 /**
  * End-to-end tests that run the application against real Postgres and Keycloak containers, started by Quarkus Dev
@@ -35,30 +43,36 @@ class MemberLifecycleIT {
     private UUID clubId;
 
     @BeforeEach
-    void seedClub() throws SQLException {
+    void seed() throws SQLException {
+        TestRealm.seed(dataSource);
         clubId = TestDatabase.insertClub(dataSource, "Integration Test Club " + UUID.randomUUID());
     }
 
-    private static Map<String, Object> memberBody(String email, UUID clubId) {
+    private static Map<String, Object> memberBody(String email, UUID... clubIds) {
         return Map.of(
                 "firstName", "Kim",
                 "lastName", "Lee",
                 "address", Map.of("street", "Main Street 1", "city", "Aarhus", "zipCode", "8000"),
                 "email", email,
-                "clubId", clubId);
+                "clubIds", Set.of(clubIds));
+    }
+
+    private static String newEmail() {
+        return "member-" + UUID.randomUUID() + "@example.com";
     }
 
     @Test
-    void adminCanCreateAndRetrieveMember() {
-        final var adminToken = KeycloakTestSupport.tokenFor("admin@wandywharang.dk", "admin");
-        final var email = "member-" + UUID.randomUUID() + "@example.com";
+    void adminCanRegisterMemberIntoSeveralClubsTheyDoNotBelongTo() {
+        final var adminToken = TestRealm.ADMIN.token();
+        final var email = newEmail();
 
         final String memberId = given()
                 .auth().oauth2(adminToken)
-                .contentType("application/json").body(memberBody(email, clubId))
+                .contentType("application/json").body(memberBody(email, CLUB_A, CLUB_C))
                 .post("/api/v1/members")
                 .then().statusCode(201)
                 .body("email", equalTo(email))
+                .body("clubs.id", containsInAnyOrder(CLUB_A.toString(), CLUB_C.toString()))
                 .extract().path("id");
 
         given()
@@ -66,72 +80,111 @@ class MemberLifecycleIT {
                 .get("/api/v1/members/{id}", memberId)
                 .then().statusCode(200)
                 .body("firstName", equalTo("Kim"))
-                .body("email", equalTo(email));
+                .body("email", equalTo(email))
+                .body("clubs.id", containsInAnyOrder(CLUB_A.toString(), CLUB_C.toString()));
     }
 
     @Test
     void creatingMemberWithoutAuthenticationIsUnauthorized() {
         given()
                 .contentType("application/json")
-                .body(memberBody("anon-" + UUID.randomUUID() + "@example.com", clubId))
+                .body(memberBody(newEmail(), CLUB_A))
                 .post("/api/v1/members")
                 .then().statusCode(401);
     }
 
     @Test
-    void membersOnlySeeMembersOfTheirOwnClub() throws SQLException {
-        final var memberToken = KeycloakTestSupport.tokenFor("member@wandywharang.dk", "member");
-        final var memberSubject = KeycloakTestSupport.subjectOf(memberToken);
-        TestDatabase.insertMember(dataSource, memberSubject, clubId, "Test", "Member", "member@wandywharang.dk");
-
-        final var otherClubId = TestDatabase.insertClub(dataSource, "Other Club " + UUID.randomUUID());
-        final var otherMemberId = UUID.randomUUID();
-        TestDatabase.insertMember(dataSource, otherMemberId, otherClubId, "Other", "Person", "other@example.com");
+    void memberSeesMembersOfEveryClubTheyBelongToAndNotOthers() throws SQLException {
+        final var memberToken = TestRealm.MEMBER_BC.token();
+        final var inClubB = TestDatabase.insertMember(dataSource, Set.of(CLUB_B), "In", "B");
+        final var inClubC = TestDatabase.insertMember(dataSource, Set.of(CLUB_C), "In", "C");
+        final var inClubsAAndC = TestDatabase.insertMember(dataSource, Set.of(CLUB_A, CLUB_C), "In", "AC");
+        final var onlyInClubA = TestDatabase.insertMember(dataSource, Set.of(CLUB_A), "Only", "A");
 
         given()
                 .auth().oauth2(memberToken)
                 .get("/api/v1/members")
                 .then().statusCode(200)
-                .body("$", hasSize(1))
-                .body("[0].id", equalTo(memberSubject.toString()));
+                .body("id", hasItems(TestRealm.MEMBER_BC.id().toString(), inClubB.toString(), inClubC.toString(),
+                        inClubsAAndC.toString(), TestRealm.INSTRUCTOR_AB.id().toString()))
+                .body("id", not(hasItem(onlyInClubA.toString())))
+                .body("id", not(hasItem(TestRealm.MEMBER_A.id().toString())));
+
+        for (final var visible : List.of(inClubB, inClubC, inClubsAAndC)) {
+            given()
+                    .auth().oauth2(memberToken)
+                    .get("/api/v1/members/{id}", visible)
+                    .then().statusCode(200)
+                    .body("id", equalTo(visible.toString()));
+        }
 
         given()
                 .auth().oauth2(memberToken)
-                .get("/api/v1/members/{id}", otherMemberId)
+                .get("/api/v1/members/{id}", onlyInClubA)
                 .then().statusCode(404);
     }
 
     @Test
-    void instructorCanUpdateMemberInOwnClubButNotInAnotherClub() throws SQLException {
-        final var instructorToken = KeycloakTestSupport.tokenFor("instructor@wandywharang.dk", "instructor");
-        final var instructorSubject = KeycloakTestSupport.subjectOf(instructorToken);
-        TestDatabase.insertMember(dataSource, instructorSubject, clubId, "Test", "Instructor", "instructor@wandywharang.dk");
+    void membersProfileListsAllTheirClubs() {
+        final var member = TestRealm.MEMBER_BC;
 
-        final var ownClubMemberId = UUID.randomUUID();
-        TestDatabase.insertMember(dataSource, ownClubMemberId, clubId, "Kim", "Lee", "kim@example.com");
+        given()
+                .auth().oauth2(member.token())
+                .get("/api/v1/members/{id}", member.id())
+                .then().statusCode(200)
+                .body("clubs.id", containsInAnyOrder(CLUB_B.toString(), CLUB_C.toString()))
+                .body("clubs.name", containsInAnyOrder("Test Club B", "Test Club C"));
+    }
 
-        final var otherClubId = TestDatabase.insertClub(dataSource, "Other Club " + UUID.randomUUID());
-        final var otherClubMemberId = UUID.randomUUID();
-        TestDatabase.insertMember(dataSource, otherClubMemberId, otherClubId, "Sam", "Doe", "sam@example.com");
+    @Test
+    void instructorCanEditMemberWhoSharesAClubButNotOneWhoSharesNone() throws SQLException {
+        final var instructorToken = TestRealm.INSTRUCTOR_AB.token();
+        final var sharesClubB = TestDatabase.insertMember(dataSource, Set.of(CLUB_B, CLUB_C), "Kim", "Lee");
+        final var sharesNone = TestDatabase.insertMember(dataSource, Set.of(CLUB_C), "Sam", "Doe");
 
         final var updateBody = Map.of(
                 "firstName", "Updated",
                 "lastName", "Lee",
                 "address", Map.of("street", "Main Street 1", "city", "Aarhus", "zipCode", "8000"),
-                "email", "kim@example.com",
-                "clubId", clubId);
+                "email", "kim@example.com");
 
         given()
                 .auth().oauth2(instructorToken)
                 .contentType("application/json").body(updateBody)
-                .put("/api/v1/members/{id}", ownClubMemberId)
+                .put("/api/v1/members/{id}", sharesClubB)
                 .then().statusCode(200)
-                .body("firstName", equalTo("Updated"));
+                .body("firstName", equalTo("Updated"))
+                .body("clubs.id", containsInAnyOrder(CLUB_B.toString(), CLUB_C.toString()));
 
         given()
                 .auth().oauth2(instructorToken)
                 .contentType("application/json").body(updateBody)
-                .put("/api/v1/members/{id}", otherClubMemberId)
+                .put("/api/v1/members/{id}", sharesNone)
+                .then().statusCode(403);
+    }
+
+    @Test
+    void instructorCanRecordGraduationForMemberWhoSharesAClubButNotOneWhoSharesNone() throws SQLException {
+        final var instructor = TestRealm.INSTRUCTOR_C;
+        final var beltId = TestDatabase.insertBelt(dataSource, "Test Belt " + UUID.randomUUID(), 100);
+        final var sharesClubC = TestDatabase.insertMember(dataSource, Set.of(CLUB_A, CLUB_C), "Kim", "Lee");
+        final var sharesNone = TestDatabase.insertMember(dataSource, Set.of(CLUB_A, CLUB_B), "Sam", "Doe");
+        final var graduation = Map.of(
+                "date", "2026-06-01",
+                "graduatedBy", Set.of(instructor.id()),
+                "beltId", beltId);
+
+        given()
+                .auth().oauth2(instructor.token())
+                .contentType("application/json").body(graduation)
+                .post("/api/v1/members/{id}/graduation", sharesClubC)
+                .then().statusCode(201)
+                .body("graduation.belt.id", equalTo(beltId.toString()));
+
+        given()
+                .auth().oauth2(instructor.token())
+                .contentType("application/json").body(graduation)
+                .post("/api/v1/members/{id}/graduation", sharesNone)
                 .then().statusCode(403);
     }
 

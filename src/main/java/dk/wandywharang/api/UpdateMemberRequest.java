@@ -7,8 +7,7 @@ import lombok.Builder;
 
 import java.time.LocalDate;
 import java.util.Optional;
-import java.util.UUID;
 
 @Builder
-public record UpdateMemberRequest(@NotEmpty String firstName, @NotEmpty String lastName, @NotNull Address address, Optional<String> phone, @NotNull @Email String email, Optional<LocalDate> dateOfBirth, @NotNull UUID clubId) {
+public record UpdateMemberRequest(@NotEmpty String firstName, @NotEmpty String lastName, @NotNull Address address, Optional<String> phone, @NotNull @Email String email, Optional<LocalDate> dateOfBirth) {
 }

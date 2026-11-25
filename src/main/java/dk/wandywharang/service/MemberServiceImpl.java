@@ -12,7 +12,6 @@ import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.RequestScoped;
-import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
 
@@ -36,7 +35,7 @@ public class MemberServiceImpl implements MemberService {
             return repository.findAll().list().chain(this::map);
         } else {
             return memberAccess.profile()
-                    .chain(profile -> repository.find("club.id", profile.getClub().getId()).list())
+                    .chain(profile -> repository.findSharingClubWith(profile))
                     .chain(this::map);
         }
     }
@@ -51,13 +50,13 @@ public class MemberServiceImpl implements MemberService {
 
     /**
      * Creates the Keycloak user first, so its id can be used as the member id. If persisting the member fails, the
-     * Keycloak user is removed again. The setup email is only sent once the member is stored. The club is checked
+     * Keycloak user is removed again. The setup email is only sent once the member is stored. The Clubs are checked
      * before anything is created, so a forbidden request never reaches Keycloak.
      */
     @WithTransaction
     @Override
     public Uni<Member> create(CreateMemberRequest request) {
-        return memberAccess.requireEditableClub(request.clubId())
+        return memberAccess.requireEditableClubs(request.clubIds())
                 .chain(() -> registerService.register(request))
                 .chain(userId -> persist(UUID.fromString(userId), request)
                         .onFailure().call(() -> registerService.unregister(userId))
@@ -76,12 +75,11 @@ public class MemberServiceImpl implements MemberService {
     }
 
     private Uni<Member> persist(UUID id, CreateMemberRequest request) {
-        return clubRepository.findById(request.clubId())
-                .onItem().ifNull().failWith(() -> new NotFoundException(String.format("Club with id = %s not found", request.clubId())))
-                .chain(club -> {
+        return clubRepository.findByIds(request.clubIds())
+                .chain(clubs -> {
                     final var entity = mapper.map(request);
                     entity.setId(id);
-                    entity.setClub(club);
+                    entity.setClubs(clubs);
                     return repository.persist(entity);
                 })
                 .map(mapper::map);

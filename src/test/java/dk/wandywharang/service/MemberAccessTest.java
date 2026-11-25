@@ -1,6 +1,7 @@
 package dk.wandywharang.service;
 
 import dk.wandywharang.TestData;
+import dk.wandywharang.entity.ClubEntity;
 import dk.wandywharang.entity.MemberEntity;
 import dk.wandywharang.repository.MemberRepository;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -16,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.security.Principal;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -49,6 +51,10 @@ class MemberAccessTest {
         }
         final Principal principal = () -> user.getId().toString();
         lenient().when(securityIdentity.getPrincipal()).thenReturn(principal);
+    }
+
+    private static Set<UUID> clubIdsOf(MemberEntity member) {
+        return member.getClubs().stream().map(ClubEntity::getId).collect(Collectors.toSet());
     }
 
     private void loggedInWith(String... roles) {
@@ -116,14 +122,14 @@ class MemberAccessTest {
     void adminCanAddMembersToAnyClub() {
         loggedInWith("admin");
 
-        access.requireEditableClub(otherClubMember.getClub().getId()).await().indefinitely();
+        access.requireEditableClubs(clubIdsOf(otherClubMember)).await().indefinitely();
     }
 
     @Test
     void instructorCanAddMembersToOwnClub() {
         loggedInWith("instructor");
 
-        access.requireEditableClub(user.getClub().getId()).await().indefinitely();
+        access.requireEditableClubs(clubIdsOf(user)).await().indefinitely();
     }
 
     @Test
@@ -131,7 +137,7 @@ class MemberAccessTest {
         loggedInWith("instructor");
 
         assertThrows(ForbiddenException.class,
-                () -> access.requireEditableClub(otherClubMember.getClub().getId()).await().indefinitely());
+                () -> access.requireEditableClubs(clubIdsOf(otherClubMember)).await().indefinitely());
     }
 
     @Test
@@ -139,6 +145,6 @@ class MemberAccessTest {
         loggedInWith("member");
 
         assertThrows(ForbiddenException.class,
-                () -> access.requireEditableClub(user.getClub().getId()).await().indefinitely());
+                () -> access.requireEditableClubs(clubIdsOf(user)).await().indefinitely());
     }
 }

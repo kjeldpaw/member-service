@@ -109,6 +109,42 @@
       ]
     },
     {
+      "username": "instructor-c@wandywharang.dk",
+      "email": "instructor-c@wandywharang.dk",
+      "firstName": "Other",
+      "lastName": "Instructor",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "instructor",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "instructor"
+      ]
+    },
+    {
+      "username": "member-bc@wandywharang.dk",
+      "email": "member-bc@wandywharang.dk",
+      "firstName": "Other",
+      "lastName": "Member",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "member",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "member"
+      ]
+    },
+    {
       "username": "service-account-member-service",
       "enabled": true,
       "serviceAccountClientId": "member-service",

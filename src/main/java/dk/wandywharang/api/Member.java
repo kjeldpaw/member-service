@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -18,7 +19,7 @@ public record Member(@NotEmpty UUID id,
                      Optional<String> phone,
                      @NotNull @Email String email,
                      Optional<LocalDate> dateOfBirth,
-                     @NotNull Club club,
+                     @NotNull List<Club> clubs,
                      Optional<Graduation> graduation,
                      Set<Reference> references) {
 

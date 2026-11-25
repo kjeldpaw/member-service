@@ -15,17 +15,18 @@ public interface MemberMapper {
 
     // The id comes from Keycloak and the relations are resolved by the service
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "club", ignore = true)
+    @Mapping(target = "clubs", ignore = true)
     @Mapping(target = "graduation", ignore = true)
     @Mapping(target = "references", ignore = true)
     @Mapping(target = "phone", expression = "java(request.phone().orElse(null))")
     @Mapping(target = "dateOfBirth", expression = "java(request.dateOfBirth().orElse(null))")
     MemberEntity map(CreateMemberRequest request);
 
-    // The email is the Keycloak username, so it is not changed by an update
+    // The email is the Keycloak username and the Clubs change only through their own endpoints, so an update
+    // changes neither
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "email", ignore = true)
-    @Mapping(target = "club", ignore = true)
+    @Mapping(target = "clubs", ignore = true)
     @Mapping(target = "graduation", ignore = true)
     @Mapping(target = "references", ignore = true)
     @Mapping(target = "phone", expression = "java(request.phone().orElse(null))")

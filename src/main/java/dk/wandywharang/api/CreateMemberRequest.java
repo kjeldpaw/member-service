@@ -11,5 +11,5 @@ import java.util.Set;
 import java.util.UUID;
 
 @Builder
-public record CreateMemberRequest(@NotEmpty String firstName, @NotEmpty String lastName, @NotNull Address address, Optional<String> phone, @NotNull @Email String email, Optional<LocalDate> dateOfBirth, @NotNull UUID clubId) {
+public record CreateMemberRequest(@NotEmpty String firstName, @NotEmpty String lastName, @NotNull Address address, Optional<String> phone, @NotNull @Email String email, Optional<LocalDate> dateOfBirth, @NotEmpty Set<@NotNull UUID> clubIds) {
 }

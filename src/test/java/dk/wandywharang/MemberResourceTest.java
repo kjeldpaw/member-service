@@ -59,7 +59,7 @@ class MemberResourceTest {
                 "lastName", "Lee",
                 "address", Map.of("street", "Main Street 1", "city", "Aarhus", "zipCode", "8000"),
                 "email", "kim@example.com",
-                "clubId", CLUB_ID);
+                "clubIds", List.of(CLUB_ID));
     }
 
     private static Map<String, Object> graduationBody() {
@@ -120,7 +120,7 @@ class MemberResourceTest {
                 .phone(Optional.empty())
                 .email("kim@example.com")
                 .dateOfBirth(Optional.empty())
-                .clubId(CLUB_ID)
+                .clubIds(Set.of(CLUB_ID))
                 .build());
     }
 
