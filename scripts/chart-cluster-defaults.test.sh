@@ -49,6 +49,14 @@ rejects() {
 rejects "QUARKUS_HTTP_CORS_ORIGINS under config is refused in favour of cors.allowedOrigin" \
   "set cors.allowedOrigin instead of config.QUARKUS_HTTP_CORS_ORIGINS" \
   --set config.QUARKUS_HTTP_CORS_ORIGINS=https://frontend.example
+for origin in "https://a.example,https://b.example" "https://a.example/" "a.example" "https://*.example" \
+  "/https://.*/" "https://a.example/app"; do
+  rejects "cors.allowedOrigin $origin is refused: it must be one scheme://host[:port] origin" \
+    "cors.allowedOrigin must be a single origin" --set-json "cors.allowedOrigin=\"$origin\""
+done
+with_port="$(render "$chart" --set cors.allowedOrigin=http://localhost:5173)" || exit 1
+assert "cors.allowedOrigin may name a port" \
+  'has_line "$with_port" "QUARKUS_HTTP_CORS_ORIGINS: \"http://localhost:5173\""'
 
 assert "by default no Secret is rendered" '! has_line "$defaults" "kind: Secret"'
 existing="$(render "$chart" --set secrets.existingSecret=from-bitwarden)" || exit 1

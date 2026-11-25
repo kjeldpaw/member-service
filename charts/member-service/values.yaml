@@ -75,6 +75,8 @@ config:
 cors:
   # The one origin browsers may call the API from: the frontend. Rendered as
   # QUARKUS_HTTP_CORS_ORIGINS, so a new frontend host needs only this value, not a new image.
+  # Must be one scheme://host[:port] origin: the chart refuses lists, paths and patterns, and
+  # refuses QUARKUS_HTTP_CORS_ORIGINS under config.
   allowedOrigin: "https://wandywharang.k3s.figge.dk"
 
 secrets:
