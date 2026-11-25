@@ -29,10 +29,9 @@ ingress:
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
   host: member-service.k3s.figge.dk
-  tls: []
-  #  - secretName: member-service-tls
-  #    hosts:
-  #      - member-service.k3s.figge.dk
+  # Both Ingresses serve the host over TLS with this secret. The Certificate that fills it is
+  # created on the k3s side.
+  tlsSecretName: member-service-tls
   # A second Ingress that serves only the API to the internet.
   public:
     enabled: true
