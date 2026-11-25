@@ -1,0 +1,3 @@
+{{- if .Values.ingress.enabled }}
+{{- include "member-service.ingress" (dict "root" . "side" "public" "suffix" "-public" "path" "/api") }}
+{{- end }}
