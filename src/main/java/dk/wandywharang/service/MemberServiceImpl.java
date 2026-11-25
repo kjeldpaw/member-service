@@ -12,6 +12,7 @@ import io.quarkus.hibernate.reactive.panache.common.WithSession;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.unchecked.Unchecked;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -93,7 +94,12 @@ public class MemberServiceImpl implements MemberService {
     @Override
     public Uni<Member> removeClub(UUID id, UUID clubId) {
         return memberAccess.findForClubChange(id, clubId)
-                .invoke(member -> member.getClubs().removeIf(club -> club.getId().equals(clubId)))
+                .invoke(Unchecked.consumer(member -> {
+                    if (member.clubIds().equals(Set.of(clubId))) {
+                        throw new LastClubException(id);
+                    }
+                    member.getClubs().removeIf(club -> club.getId().equals(clubId));
+                }))
                 .chain(repository::fetchDetails)
                 .map(mapper::map);
     }
