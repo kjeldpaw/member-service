@@ -45,10 +45,12 @@ existing="$(render "$chart" --set secrets.existingSecret=from-bitwarden)" || exi
 assert "with existingSecret set, no Secret is rendered" '! has_line "$existing" "kind: Secret"'
 assert "with existingSecret set, the Deployment reads that Secret" \
   '[[ "$(secret_ref "$existing")" == from-bitwarden ]]'
-inline="$(render "$chart" --set secrets.existingSecret= -f "$chart/values.secret.example.yaml")" || exit 1
+# Another release name, so the generated Secret (local-member-service-secrets) can't be mistaken
+# for the member-service-secrets default.
+inline="$(render_as local "$chart" -f "$chart/values.secret.example.yaml")" || exit 1
 assert "inline secret values still render a Secret for local installs" 'has_line "$inline" "kind: Secret"'
 assert "inline secret values are what the Deployment reads" \
-  '[[ "$(secret_ref "$inline")" == member-service-secrets ]]'
+  '[[ "$(secret_ref "$inline")" == local-member-service-secrets ]]'
 
 assert "helm lint passes with default values" 'helm lint "$chart" >/dev/null'
 
