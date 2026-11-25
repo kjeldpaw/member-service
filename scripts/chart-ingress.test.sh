@@ -24,10 +24,13 @@ ingress() {
     $0 == "  name: " name { named = 1 }
     END { if (kind && named) printf "%s", doc }' <<<"$1"
 }
+
 # tls_secrets <ingress>: the TLS secret names, one per line.
 tls_secrets() { sed -nE 's/^[[:space:]]*-? ?secretName: //p' <<<"$1"; }
+
 # tls_host <ingress>: the host the TLS entry covers, the line after its hosts:.
 tls_host() { grep -A1 -E '^[[:space:]]*-? ?hosts:$' <<<"$1" | sed -nE 's/^[[:space:]]*- "?([^":]*)"?$/\1/p'; }
+
 # paths <ingress>: the path of each rule, one per line.
 paths() { sed -nE 's/^[[:space:]]*- path: //p' <<<"$1"; }
 
