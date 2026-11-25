@@ -53,6 +53,16 @@ public class MemberAccess {
     }
 
     /**
+     * Only Admins may delete a Member entirely.
+     */
+    public Uni<MemberEntity> findDeletable(UUID id) {
+        if (!isAdmin()) {
+            return Uni.createFrom().failure(new ForbiddenException("Only Admins may delete Members"));
+        }
+        return find(id);
+    }
+
+    /**
      * Fails unless the current user may add Members to all the given Clubs: Admins to any Club, Instructors to their
      * own.
      */
@@ -69,6 +79,15 @@ public class MemberAccess {
                 throw new ForbiddenException(String.format("Clubs with ids = %s are not your Clubs", notOwn));
             }
         })).replaceWithVoid();
+    }
+
+    /**
+     * Loads a Member whose membership of the given Club the current user may change: Admins any Member and any Club,
+     * Instructors any Member but only their own Clubs. The Member need not share a Club with the Instructor, so an
+     * Instructor can pull an existing Member into their Club.
+     */
+    public Uni<MemberEntity> findForClubChange(UUID id, UUID clubId) {
+        return requireEditableClubs(Set.of(clubId)).chain(() -> find(id));
     }
 
     public Uni<MemberEntity> profile() {

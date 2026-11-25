@@ -180,6 +180,30 @@ class MemberServiceImplTest {
     }
 
     @Test
+    void createFailsWithPersistFailureEvenWhenRemovingKeycloakUserFails() {
+        final var userId = UUID.randomUUID().toString();
+        final var request = createRequest();
+        when(memberAccess.requireEditableClubs(Set.of(club.getId()))).thenReturn(Uni.createFrom().voidItem());
+        when(clubRepository.findByIds(Set.of(club.getId()))).thenReturn(Uni.createFrom().item(Set.of(club)));
+        when(registerService.register(request)).thenReturn(Uni.createFrom().item(userId));
+        when(mapper.map(request)).thenReturn(new MemberEntity());
+        when(repository.persist(any(MemberEntity.class))).thenReturn(Uni.createFrom().failure(new IllegalStateException("Database down")));
+        when(registerService.unregister(userId)).thenReturn(Uni.createFrom().failure(new RegisterException(500, "Keycloak down")));
+
+        assertThrows(IllegalStateException.class, () -> service.create(request).await().indefinitely());
+    }
+
+    @Test
+    void deleteFailsWhenKeycloakUserCannotBeRemoved() {
+        final var entity = TestData.member(club);
+        when(memberAccess.findDeletable(entity.getId())).thenReturn(Uni.createFrom().item(entity));
+        when(repository.deleteWithDependents(entity)).thenReturn(Uni.createFrom().voidItem());
+        when(registerService.unregister(entity.getId().toString())).thenReturn(Uni.createFrom().failure(new RegisterException(500, "Keycloak down")));
+
+        assertThrows(RegisterException.class, () -> service.delete(entity.getId()).await().indefinitely());
+    }
+
+    @Test
     void createSucceedsWhenSetupEmailFails() {
         final var userId = UUID.randomUUID().toString();
         final var request = createRequest();

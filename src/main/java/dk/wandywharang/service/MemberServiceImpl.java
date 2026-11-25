@@ -53,8 +53,9 @@ public class MemberServiceImpl implements MemberService {
 
     /**
      * Creates the Keycloak user first, so its id can be used as the member id. If persisting the member fails, the
-     * Keycloak user is removed again. The setup email is only sent once the member is stored. The Clubs are checked
-     * and found before anything is created, so a forbidden request or an unknown Club never reaches Keycloak.
+     * Keycloak user is removed again on a best-effort basis, so the persist failure is what the caller sees. The setup
+     * email is only sent once the member is stored. The Clubs are checked and found before anything is created, so a
+     * forbidden request or an unknown Club never reaches Keycloak.
      */
     @WithTransaction
     @Override
@@ -63,7 +64,9 @@ public class MemberServiceImpl implements MemberService {
                 .chain(() -> findClubs(request.clubIds()))
                 .chain(clubs -> registerService.register(request)
                         .chain(userId -> persist(UUID.fromString(userId), request, clubs)
-                                .onFailure().call(() -> registerService.unregister(userId))
+                                .onFailure().call(() -> registerService.unregister(userId)
+                                        .onFailure().invoke(e -> log.warnf(e, "Could not remove Keycloak user %s", userId))
+                                        .onFailure().recoverWithNull())
                                 .call(() -> registerService.sendSetupEmail(userId)
                                         .onFailure().invoke(e -> log.warnf(e, "Could not send setup email to Keycloak user %s", userId))
                                         .onFailure().recoverWithNull())));
@@ -76,6 +79,56 @@ public class MemberServiceImpl implements MemberService {
                 .invoke(member -> mapper.map(request, member))
                 .chain(repository::fetchDetails)
                 .map(mapper::map);
+    }
+
+    /**
+     * The Club is found before the current user's permission for it is checked, so an unknown Club is not found for
+     * everyone.
+     */
+    @WithTransaction
+    @Override
+    public Uni<Member> addClub(UUID id, UUID clubId) {
+        return requireClub(clubId)
+                .chain(club -> memberAccess.findForClubChange(id, clubId)
+                        .invoke(member -> member.getClubs().add(club)))
+                .chain(repository::fetchDetails)
+                .map(mapper::map);
+    }
+
+    /**
+     * The Club is found before the current user's permission for it is checked, so an unknown Club is not found for
+     * everyone.
+     */
+    @WithTransaction
+    @Override
+    public Uni<Member> removeClub(UUID id, UUID clubId) {
+        return requireClub(clubId)
+                .chain(() -> memberAccess.findForClubChange(id, clubId))
+                .invoke(member -> {
+                    if (member.clubIds().equals(Set.of(clubId))) {
+                        throw new LastClubException(id);
+                    }
+                    member.getClubs().removeIf(club -> club.getId().equals(clubId));
+                })
+                .chain(repository::fetchDetails)
+                .map(mapper::map);
+    }
+
+    /**
+     * The database changes are flushed before the Keycloak user is removed, so a delete that the database refuses
+     * never removes the login. If Keycloak fails to remove the login, the request fails and the transaction rolls
+     * back, so the Member is never deleted while their login survives.
+     */
+    @WithTransaction
+    @Override
+    public Uni<Void> delete(UUID id) {
+        return memberAccess.findDeletable(id)
+                .call(repository::deleteWithDependents)
+                .chain(member -> registerService.unregister(member.getId().toString()));
+    }
+
+    private Uni<ClubEntity> requireClub(UUID id) {
+        return findClubs(Set.of(id)).map(clubs -> clubs.iterator().next());
     }
 
     private Uni<Set<ClubEntity>> findClubs(Set<UUID> ids) {

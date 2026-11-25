@@ -1,0 +1,222 @@
+package dk.wandywharang.it;
+
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
+import jakarta.inject.Inject;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
+import javax.sql.DataSource;
+import java.sql.SQLException;
+import java.util.Set;
+import java.util.UUID;
+
+import static dk.wandywharang.it.TestRealm.CLUB_A;
+import static dk.wandywharang.it.TestRealm.CLUB_B;
+import static dk.wandywharang.it.TestRealm.CLUB_C;
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
+
+/**
+ * Adding a Club to, and removing one from, an existing Member over HTTP, against real Postgres and Keycloak. See
+ * {@link MemberLifecycleIT} for how the integration tests run.
+ */
+@QuarkusTest
+@TestProfile(IntegrationTestProfile.class)
+@Tag("integration")
+class MemberClubsIT {
+    private static final String MEMBER_CLUB = "/api/v1/members/{id}/clubs/{clubId}";
+
+    @Inject
+    DataSource dataSource;
+
+    @BeforeEach
+    void seed() throws SQLException {
+        TestRealm.seed(dataSource);
+    }
+
+    @Test
+    void instructorCanAddMemberWhoSharesNoClubToOneOfTheirOwnClubs() throws SQLException {
+        final var instructorToken = TestRealm.INSTRUCTOR_AB.token();
+        final var member = TestDatabase.insertNewMember(dataSource, "Kim", "Lee", Set.of(CLUB_C));
+
+        given()
+                .auth().oauth2(instructorToken)
+                .put(MEMBER_CLUB, member, CLUB_A)
+                .then().statusCode(200)
+                .body("id", equalTo(member.toString()))
+                .body("clubs.id", containsInAnyOrder(CLUB_A.toString(), CLUB_C.toString()));
+
+        given()
+                .auth().oauth2(instructorToken)
+                .get("/api/v1/members/{id}", member)
+                .then().statusCode(200)
+                .body("clubs.id", containsInAnyOrder(CLUB_A.toString(), CLUB_C.toString()));
+    }
+
+    @Test
+    void instructorCanRemoveMemberFromOneOfTheirOwnClubs() throws SQLException {
+        final var instructorToken = TestRealm.INSTRUCTOR_AB.token();
+        final var member = TestDatabase.insertNewMember(dataSource, "Kim", "Lee", Set.of(CLUB_A, CLUB_C));
+
+        given()
+                .auth().oauth2(instructorToken)
+                .delete(MEMBER_CLUB, member, CLUB_A)
+                .then().statusCode(200)
+                .body("id", equalTo(member.toString()))
+                .body("clubs.id", containsInAnyOrder(CLUB_C.toString()));
+
+        given()
+                .auth().oauth2(TestRealm.ADMIN.token())
+                .get("/api/v1/members/{id}", member)
+                .then().statusCode(200)
+                .body("clubs.id", containsInAnyOrder(CLUB_C.toString()));
+    }
+
+    @Test
+    void instructorIsRefusedWhenAddingOrRemovingAClubThatIsNotTheirsAndNothingChanges() throws SQLException {
+        final var instructorToken = TestRealm.INSTRUCTOR_AB.token();
+        final var member = TestDatabase.insertNewMember(dataSource, "Kim", "Lee", Set.of(CLUB_A, CLUB_C));
+
+        given()
+                .auth().oauth2(instructorToken)
+                .put(MEMBER_CLUB, member, CLUB_C)
+                .then().statusCode(403);
+
+        given()
+                .auth().oauth2(TestRealm.INSTRUCTOR_C.token())
+                .put(MEMBER_CLUB, member, CLUB_B)
+                .then().statusCode(403);
+
+        given()
+                .auth().oauth2(instructorToken)
+                .delete(MEMBER_CLUB, member, CLUB_C)
+                .then().statusCode(403);
+
+        given()
+                .auth().oauth2(TestRealm.ADMIN.token())
+                .get("/api/v1/members/{id}", member)
+                .then().statusCode(200)
+                .body("clubs.id", containsInAnyOrder(CLUB_A.toString(), CLUB_C.toString()));
+    }
+
+    @Test
+    void memberLoginIsRefusedWhenAddingOrRemovingAClub() throws SQLException {
+        final var memberToken = TestRealm.MEMBER_BC.token();
+        final var member = TestDatabase.insertNewMember(dataSource, "Kim", "Lee", Set.of(CLUB_B, CLUB_C));
+
+        given()
+                .auth().oauth2(memberToken)
+                .put(MEMBER_CLUB, member, CLUB_A)
+                .then().statusCode(403);
+
+        given()
+                .auth().oauth2(memberToken)
+                .delete(MEMBER_CLUB, member, CLUB_B)
+                .then().statusCode(403);
+    }
+
+    @Test
+    void adminCanAddAndRemoveAnyClub() throws SQLException {
+        final var adminToken = TestRealm.ADMIN.token();
+        final var member = TestDatabase.insertNewMember(dataSource, "Kim", "Lee", Set.of(CLUB_A));
+
+        given()
+                .auth().oauth2(adminToken)
+                .put(MEMBER_CLUB, member, CLUB_C)
+                .then().statusCode(200)
+                .body("clubs.id", containsInAnyOrder(CLUB_A.toString(), CLUB_C.toString()));
+
+        given()
+                .auth().oauth2(adminToken)
+                .delete(MEMBER_CLUB, member, CLUB_A)
+                .then().statusCode(200)
+                .body("clubs.id", containsInAnyOrder(CLUB_C.toString()));
+    }
+
+    @Test
+    void addingAClubTheMemberHasOrRemovingOneTheyDoNotHaveChangesNothing() throws SQLException {
+        final var instructorToken = TestRealm.INSTRUCTOR_AB.token();
+        final var member = TestDatabase.insertNewMember(dataSource, "Kim", "Lee", Set.of(CLUB_A));
+
+        given()
+                .auth().oauth2(instructorToken)
+                .put(MEMBER_CLUB, member, CLUB_A)
+                .then().statusCode(200)
+                .body("clubs.id", containsInAnyOrder(CLUB_A.toString()));
+
+        given()
+                .auth().oauth2(instructorToken)
+                .delete(MEMBER_CLUB, member, CLUB_B)
+                .then().statusCode(200)
+                .body("clubs.id", containsInAnyOrder(CLUB_A.toString()));
+
+        given()
+                .auth().oauth2(instructorToken)
+                .get("/api/v1/members/{id}", member)
+                .then().statusCode(200)
+                .body("clubs.id", containsInAnyOrder(CLUB_A.toString()));
+    }
+
+    @Test
+    void removingAMembersLastClubIsAConflictAndTheMemberKeepsIt() throws SQLException {
+        final var adminToken = TestRealm.ADMIN.token();
+        final var member = TestDatabase.insertNewMember(dataSource, "Kim", "Lee", Set.of(CLUB_A));
+
+        given()
+                .auth().oauth2(adminToken)
+                .delete(MEMBER_CLUB, member, CLUB_A)
+                .then().statusCode(409)
+                .contentType("application/json")
+                .body("message", equalTo("Member with id = " + member + " must belong to at least one Club"));
+
+        given()
+                .auth().oauth2(adminToken)
+                .get("/api/v1/members/{id}", member)
+                .then().statusCode(200)
+                .body("clubs.id", containsInAnyOrder(CLUB_A.toString()));
+    }
+
+    @Test
+    void addingOrRemovingAClubOfAnUnknownMemberIsNotFound() {
+        final var unknown = UUID.randomUUID();
+
+        for (final var token : new String[]{TestRealm.ADMIN.token(), TestRealm.INSTRUCTOR_AB.token()}) {
+            given()
+                    .auth().oauth2(token)
+                    .put(MEMBER_CLUB, unknown, CLUB_A)
+                    .then().statusCode(404);
+
+            given()
+                    .auth().oauth2(token)
+                    .delete(MEMBER_CLUB, unknown, CLUB_A)
+                    .then().statusCode(404);
+        }
+    }
+
+    @Test
+    void addingOrRemovingAnUnknownClubIsNotFoundAndNothingChanges() throws SQLException {
+        final var member = TestDatabase.insertNewMember(dataSource, "Kim", "Lee", Set.of(CLUB_A, CLUB_B));
+        final var unknownClub = UUID.randomUUID();
+
+        for (final var token : new String[]{TestRealm.ADMIN.token(), TestRealm.INSTRUCTOR_AB.token()}) {
+            given()
+                    .auth().oauth2(token)
+                    .put(MEMBER_CLUB, member, unknownClub)
+                    .then().statusCode(404);
+
+            given()
+                    .auth().oauth2(token)
+                    .delete(MEMBER_CLUB, member, unknownClub)
+                    .then().statusCode(404);
+        }
+
+        given()
+                .auth().oauth2(TestRealm.ADMIN.token())
+                .get("/api/v1/members/{id}", member)
+                .then().statusCode(200)
+                .body("clubs.id", containsInAnyOrder(CLUB_A.toString(), CLUB_B.toString()));
+    }
+}
