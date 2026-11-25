@@ -12,17 +12,15 @@ chart=charts/member-service
 app_version="$(chart_field "$chart" appVersion)"
 # The chart's own image.repository, so the expected image follows values.yaml.
 repository="$(helm show values "$chart" | awk '/^image:/{f=1;next} /^[^[:space:]#]/{f=0} f && $1=="repository:"{print $2}')"
-# secrets.existingSecret is set only because the chart refuses to render without secrets; the
-# image values under test keep their defaults.
-render() { helm template member-service "$chart" --show-only templates/deployment.yaml --set secrets.existingSecret=member-service "$@"; }
-rendered="$(render)" || exit 1
-overridden="$(render --set image.tag=abc123)" || exit 1
+deployment() { render "$chart" --show-only templates/deployment.yaml "$@"; }
+rendered="$(deployment)" || exit 1
+overridden="$(deployment --set image.tag=abc123)" || exit 1
 
 assert "appVersion names a published version, not latest" '[[ -n "$app_version" && "$app_version" != latest ]]'
 assert "values.yaml names an image repository" '[[ -n "$repository" ]]'
 assert "the image tag defaults to appVersion ($app_version)" \
-  'grep -qx "  *image: \"$repository:$app_version\"" <<<"$rendered"'
-assert "the pull policy defaults to IfNotPresent" 'grep -qx "  *imagePullPolicy: IfNotPresent" <<<"$rendered"'
-assert "image.tag still overrides the default" 'grep -qx "  *image: \"$repository:abc123\"" <<<"$overridden"'
+  'has_line "$rendered" "image: \"$repository:$app_version\""'
+assert "the pull policy defaults to IfNotPresent" 'has_line "$rendered" "imagePullPolicy: IfNotPresent"'
+assert "image.tag still overrides the default" 'has_line "$overridden" "image: \"$repository:abc123\""'
 
 finish

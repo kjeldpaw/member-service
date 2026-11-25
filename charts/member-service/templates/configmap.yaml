@@ -1,3 +1,12 @@
+{{- if hasKey .Values.config "QUARKUS_HTTP_CORS_ORIGINS" }}
+{{- fail "set cors.allowedOrigin instead of config.QUARKUS_HTTP_CORS_ORIGINS: the chart renders QUARKUS_HTTP_CORS_ORIGINS from cors.allowedOrigin" }}
+{{- end }}
+{{- $origin := required "cors.allowedOrigin is required" .Values.cors.allowedOrigin }}
+{{- /* Quarkus reads quarkus.http.cors.origins as a comma-separated list of origins or /regexes/, so
+     anything but one plain origin would allow more than the frontend. */}}
+{{- if not (regexMatch "^https?://[A-Za-z0-9.-]+(:[0-9]+)?$" $origin) }}
+{{- fail (printf "cors.allowedOrigin must be a single origin, scheme://host[:port] with no path, e.g. https://wandywharang.k3s.figge.dk; got %q" $origin) }}
+{{- end }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -8,3 +17,4 @@ data:
   {{- range $key, $value := .Values.config }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
+  QUARKUS_HTTP_CORS_ORIGINS: {{ $origin | quote }}

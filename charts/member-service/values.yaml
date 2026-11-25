@@ -57,23 +57,33 @@ livenessProbe:
   periodSeconds: 20
 
 # Non-sensitive configuration, rendered into a ConfigMap and exposed as environment variables.
-# Adjust the hostnames if your Postgres/Keycloak/OTel Services are named differently or live in
-# another namespace.
+# The defaults fit the k3s cluster: the shared Postgres in the postgres namespace, Keycloak at its
+# public hostname (so the token issuer matches what Keycloak writes into tokens), and the
+# OpenTelemetry collector in the opentelemetry namespace.
 config:
-  QUARKUS_DATASOURCE_JDBC_URL: "jdbc:postgresql://postgres.member-service.svc.cluster.local:5432/member_service"
-  QUARKUS_DATASOURCE_REACTIVE_URL: "postgresql://postgres.member-service.svc.cluster.local:5432/member_service"
-  QUARKUS_OIDC_AUTH_SERVER_URL: "http://keycloak.member-service.svc.cluster.local:8080/realms/wandywharang"
+  QUARKUS_DATASOURCE_JDBC_URL: "jdbc:postgresql://postgres-postgresql.postgres.svc.cluster.local:5432/member_service"
+  QUARKUS_DATASOURCE_REACTIVE_URL: "postgresql://postgres-postgresql.postgres.svc.cluster.local:5432/member_service"
+  QUARKUS_OIDC_AUTH_SERVER_URL: "https://keycloak.k3s.figge.dk/realms/wandywharang"
   QUARKUS_OIDC_CLIENT_ID: "member-service"
-  QUARKUS_KEYCLOAK_ADMIN_CLIENT_SERVER_URL: "http://keycloak.member-service.svc.cluster.local:8080"
+  QUARKUS_KEYCLOAK_ADMIN_CLIENT_SERVER_URL: "https://keycloak.k3s.figge.dk"
   QUARKUS_KEYCLOAK_ADMIN_CLIENT_REALM: "wandywharang"
   QUARKUS_KEYCLOAK_ADMIN_CLIENT_CLIENT_ID: "member-service"
   QUARKUS_KEYCLOAK_ADMIN_CLIENT_GRANT_TYPE: "CLIENT_CREDENTIALS"
   MEMBER_SERVICE_KEYCLOAK_REALM: "wandywharang"
-  QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.member-service.svc.cluster.local:4317"
+  QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.opentelemetry.svc.cluster.local:4317"
+
+cors:
+  # The one origin browsers may call the API from: the frontend. Rendered as
+  # QUARKUS_HTTP_CORS_ORIGINS, so a new frontend host needs only this value, not a new image.
+  # Must be one scheme://host[:port] origin: the chart refuses lists, paths and patterns, and
+  # refuses QUARKUS_HTTP_CORS_ORIGINS under config.
+  allowedOrigin: "https://wandywharang.k3s.figge.dk"
 
 secrets:
   # Name of a pre-existing Secret holding the keys below. When set, the chart does not create one.
-  existingSecret: ""
+  # On the cluster this Secret is supplied from Bitwarden. For a local install, set it to "" and
+  # give the values below instead.
+  existingSecret: "member-service-secrets"
   # Used only when existingSecret is empty. Supply real values from a gitignored values file
   # (see values.secret.example.yaml) or with --set; never commit them.
   values:
