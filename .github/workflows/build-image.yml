@@ -43,6 +43,7 @@ jobs:
           ./scripts/gradle-version.test.sh
           ./scripts/chart-image.test.sh
           ./scripts/chart-cluster-defaults.test.sh
+          ./scripts/chart-ingress.test.sh
 
   build-and-push:
     needs: test-release-tooling
