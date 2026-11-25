@@ -16,8 +16,10 @@ import java.util.UUID;
 
 import static dk.wandywharang.it.TestRealm.CLUB_A;
 import static dk.wandywharang.it.TestRealm.CLUB_B;
+import static dk.wandywharang.it.TestRealm.CLUB_C;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -130,5 +132,66 @@ class MemberDeletionIT {
                 .then().statusCode(200)
                 .body("graduation.belt.id", equalTo(firstBelt.toString()))
                 .body("graduation.graduatedBy.id", contains(TestRealm.INSTRUCTOR_AB.id().toString()));
+    }
+
+    @Test
+    void instructorIsRefusedEvenForMemberWhoSharesAClubAndTheMemberIsUnchanged() {
+        final var email = newEmail();
+        final var memberId = register(email, CLUB_A, CLUB_B);
+
+        given()
+                .auth().oauth2(TestRealm.INSTRUCTOR_AB.token())
+                .delete("/api/v1/members/{id}", memberId)
+                .then().statusCode(403);
+
+        given()
+                .auth().oauth2(TestRealm.ADMIN.token())
+                .get("/api/v1/members/{id}", memberId)
+                .then().statusCode(200)
+                .body("email", equalTo(email))
+                .body("clubs.id", containsInAnyOrder(CLUB_A.toString(), CLUB_B.toString()));
+        assertTrue(KeycloakTestSupport.userExists(email));
+    }
+
+    @Test
+    void memberIsRefused() {
+        final var email = newEmail();
+        final var memberId = register(email, CLUB_B, CLUB_C);
+
+        given()
+                .auth().oauth2(TestRealm.MEMBER_BC.token())
+                .delete("/api/v1/members/{id}", memberId)
+                .then().statusCode(403);
+
+        given()
+                .auth().oauth2(TestRealm.ADMIN.token())
+                .get("/api/v1/members/{id}", memberId)
+                .then().statusCode(200);
+        assertTrue(KeycloakTestSupport.userExists(email));
+    }
+
+    @Test
+    void deletingAnUnknownMemberIsNotFound() {
+        given()
+                .auth().oauth2(TestRealm.ADMIN.token())
+                .delete("/api/v1/members/{id}", UUID.randomUUID())
+                .then().statusCode(404);
+    }
+
+    @Test
+    void deletingMemberWhoseKeycloakUserIsAlreadyGoneSucceeds() throws SQLException {
+        // Inserted straight into the database, so there is no Keycloak user with this id
+        final var memberId = TestDatabase.insertNewMember(dataSource, "Kim", "Lee", Set.of(CLUB_A));
+        final var adminToken = TestRealm.ADMIN.token();
+
+        given()
+                .auth().oauth2(adminToken)
+                .delete("/api/v1/members/{id}", memberId)
+                .then().statusCode(204);
+
+        given()
+                .auth().oauth2(adminToken)
+                .get("/api/v1/members/{id}", memberId)
+                .then().statusCode(404);
     }
 }
