@@ -1,0 +1,35 @@
+name: Release
+
+# A release is a tag vX.Y.Z (ADR 0001). It publishes the image :X.Y.Z, built with Gradle version
+# X.Y.Z, and only if Chart.yaml's version and appVersion are both X.Y.Z.
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check the tag against Chart.yaml
+        id: version
+        # The assignment fails the step when the check fails; an echo of $(...) would hide it.
+        run: |
+          version="$(./scripts/release-version.sh "$GITHUB_REF_NAME")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  release:
+    needs: check-version
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/build-image.yml
+    with:
+      image-tag: ${{ needs.check-version.outputs.version }}
+      version: ${{ needs.check-version.outputs.version }}

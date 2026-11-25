@@ -46,7 +46,9 @@ dependencies {
 }
 
 group = "dk.wandywharang"
-version = "1.0.0-SNAPSHOT"
+// The version comes from the build: the release workflow passes -Pversion=X.Y.Z from the tag (ADR 0001).
+// Quarkus reports it as the application version in logs and telemetry. Local builds get a development default.
+version = providers.gradleProperty("version").getOrElse("0.0.0-SNAPSHOT")
 
 java {
     sourceCompatibility = JavaVersion.VERSION_25
@@ -57,6 +59,11 @@ tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
     options.compilerArgs.add("-parameters")
     options.compilerArgs.add("-Amapstruct.unmappedTargetPolicy=ERROR")
+}
+
+tasks.withType<Test> {
+    // ApplicationVersionTest checks that Quarkus reports this version as quarkus.application.version.
+    systemProperty("gradle.project.version", version.toString())
 }
 
 // Integration tests (tagged "integration") run against real Postgres and Keycloak containers started by Quarkus Dev
