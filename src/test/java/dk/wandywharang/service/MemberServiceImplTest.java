@@ -72,6 +72,10 @@ class MemberServiceImplTest {
     }
 
     private CreateMemberRequest createRequest() {
+        return createRequest(Set.of(club.getId()));
+    }
+
+    private static CreateMemberRequest createRequest(Set<UUID> clubIds) {
         return CreateMemberRequest.builder()
                 .firstName("Kim")
                 .lastName("Lee")
@@ -79,7 +83,7 @@ class MemberServiceImplTest {
                 .phone(Optional.empty())
                 .email("kim@example.com")
                 .dateOfBirth(Optional.empty())
-                .clubIds(Set.of(club.getId()))
+                .clubIds(clubIds)
                 .build();
     }
 
@@ -148,15 +152,29 @@ class MemberServiceImplTest {
     }
 
     @Test
+    void createInUnknownClubIsNotFoundAndNeverReachesKeycloak() {
+        final var unknown = UUID.randomUUID();
+        final var request = createRequest(Set.of(club.getId(), unknown));
+        when(memberAccess.requireEditableClubs(request.clubIds())).thenReturn(Uni.createFrom().voidItem());
+        when(clubRepository.findByIds(request.clubIds())).thenReturn(Uni.createFrom().item(Set.of(club)));
+
+        final var failure = assertThrows(NotFoundException.class, () -> service.create(request).await().indefinitely());
+        assertEquals(String.format("Clubs with ids = [%s] not found", unknown), failure.getMessage());
+        verifyNoInteractions(registerService);
+    }
+
+    @Test
     void createRemovesKeycloakUserWhenPersistingFails() {
         final var userId = UUID.randomUUID().toString();
         final var request = createRequest();
         when(memberAccess.requireEditableClubs(Set.of(club.getId()))).thenReturn(Uni.createFrom().voidItem());
+        when(clubRepository.findByIds(Set.of(club.getId()))).thenReturn(Uni.createFrom().item(Set.of(club)));
         when(registerService.register(request)).thenReturn(Uni.createFrom().item(userId));
-        when(clubRepository.findByIds(Set.of(club.getId()))).thenReturn(Uni.createFrom().failure(new NotFoundException()));
+        when(mapper.map(request)).thenReturn(new MemberEntity());
+        when(repository.persist(any(MemberEntity.class))).thenReturn(Uni.createFrom().failure(new IllegalStateException("Database down")));
         when(registerService.unregister(userId)).thenReturn(Uni.createFrom().voidItem());
 
-        assertThrows(NotFoundException.class, () -> service.create(request).await().indefinitely());
+        assertThrows(IllegalStateException.class, () -> service.create(request).await().indefinitely());
         verify(registerService).unregister(userId);
         verify(registerService, never()).sendSetupEmail(anyString());
     }

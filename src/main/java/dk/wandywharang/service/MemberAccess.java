@@ -12,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -65,8 +64,7 @@ public class MemberAccess {
             return Uni.createFrom().failure(new ForbiddenException("Not allowed to edit Members"));
         }
         return profile().invoke(Unchecked.consumer(profile -> {
-            final var notOwn = new TreeSet<>(clubIds);
-            notOwn.removeAll(profile.clubIds());
+            final var notOwn = Ids.notIn(clubIds, profile.clubIds());
             if (!notOwn.isEmpty()) {
                 throw new ForbiddenException(String.format("Clubs with ids = %s are not your Clubs", notOwn));
             }

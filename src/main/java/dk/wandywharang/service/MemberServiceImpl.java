@@ -3,6 +3,7 @@ package dk.wandywharang.service;
 import dk.wandywharang.api.CreateMemberRequest;
 import dk.wandywharang.api.Member;
 import dk.wandywharang.api.UpdateMemberRequest;
+import dk.wandywharang.entity.ClubEntity;
 import dk.wandywharang.entity.MemberEntity;
 import dk.wandywharang.mapper.MemberMapper;
 import dk.wandywharang.repository.ClubRepository;
@@ -12,10 +13,12 @@ import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.RequestScoped;
+import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @JBossLog
@@ -51,18 +54,19 @@ public class MemberServiceImpl implements MemberService {
     /**
      * Creates the Keycloak user first, so its id can be used as the member id. If persisting the member fails, the
      * Keycloak user is removed again. The setup email is only sent once the member is stored. The Clubs are checked
-     * before anything is created, so a forbidden request never reaches Keycloak.
+     * and found before anything is created, so a forbidden request or an unknown Club never reaches Keycloak.
      */
     @WithTransaction
     @Override
     public Uni<Member> create(CreateMemberRequest request) {
         return memberAccess.requireEditableClubs(request.clubIds())
-                .chain(() -> registerService.register(request))
-                .chain(userId -> persist(UUID.fromString(userId), request)
-                        .onFailure().call(() -> registerService.unregister(userId))
-                        .call(() -> registerService.sendSetupEmail(userId)
-                                .onFailure().invoke(e -> log.warnf(e, "Could not send setup email to Keycloak user %s", userId))
-                                .onFailure().recoverWithNull()));
+                .chain(() -> findClubs(request.clubIds()))
+                .chain(clubs -> registerService.register(request)
+                        .chain(userId -> persist(UUID.fromString(userId), request, clubs)
+                                .onFailure().call(() -> registerService.unregister(userId))
+                                .call(() -> registerService.sendSetupEmail(userId)
+                                        .onFailure().invoke(e -> log.warnf(e, "Could not send setup email to Keycloak user %s", userId))
+                                        .onFailure().recoverWithNull())));
     }
 
     @WithTransaction
@@ -74,15 +78,21 @@ public class MemberServiceImpl implements MemberService {
                 .map(mapper::map);
     }
 
-    private Uni<Member> persist(UUID id, CreateMemberRequest request) {
-        return clubRepository.findByIds(request.clubIds())
-                .chain(clubs -> {
-                    final var entity = mapper.map(request);
-                    entity.setId(id);
-                    entity.setClubs(clubs);
-                    return repository.persist(entity);
-                })
-                .map(mapper::map);
+    private Uni<Set<ClubEntity>> findClubs(Set<UUID> ids) {
+        return clubRepository.findByIds(ids).map(clubs -> {
+            final var missing = Ids.notIn(ids, clubs.stream().map(ClubEntity::getId).toList());
+            if (!missing.isEmpty()) {
+                throw new NotFoundException(String.format("Clubs with ids = %s not found", missing));
+            }
+            return clubs;
+        });
+    }
+
+    private Uni<Member> persist(UUID id, CreateMemberRequest request, Set<ClubEntity> clubs) {
+        final var entity = mapper.map(request);
+        entity.setId(id);
+        entity.setClubs(clubs);
+        return repository.persist(entity).map(mapper::map);
     }
 
     /**
