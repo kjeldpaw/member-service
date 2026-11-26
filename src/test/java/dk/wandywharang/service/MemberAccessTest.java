@@ -3,6 +3,7 @@ package dk.wandywharang.service;
 import dk.wandywharang.TestData;
 import dk.wandywharang.entity.MemberEntity;
 import dk.wandywharang.repository.MemberRepository;
+import io.quarkus.hibernate.reactive.panache.PanacheQuery;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.ForbiddenException;
@@ -14,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.security.Principal;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -23,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class MemberAccessTest {
@@ -98,17 +102,57 @@ class MemberAccessTest {
     }
 
     @Test
-    void memberCanSeeMemberOfOwnClub() {
+    void memberCanSeeThemselves() {
         loggedInWith("member");
+
+        assertSame(user, access.findVisible(user.getId()).await().indefinitely());
+    }
+
+    @Test
+    void memberOfOwnClubIsHiddenFromPlainMemberAsNotFound() {
+        loggedInWith("member");
+
+        assertThrows(NotFoundException.class, () -> access.findVisible(sameClubMember.getId()).await().indefinitely());
+    }
+
+    @Test
+    void instructorCanSeeMemberOfOwnClub() {
+        loggedInWith("member", "instructor");
 
         assertSame(sameClubMember, access.findVisible(sameClubMember.getId()).await().indefinitely());
     }
 
     @Test
-    void memberOfOtherClubIsHiddenAsNotFound() {
-        loggedInWith("member");
+    void memberOfOtherClubIsHiddenFromInstructorAsNotFound() {
+        loggedInWith("member", "instructor");
 
         assertThrows(NotFoundException.class, () -> access.findVisible(otherClubMember.getId()).await().indefinitely());
+    }
+
+    @Test
+    void plainMemberListsOnlyThemselves() {
+        loggedInWith("member");
+
+        assertEquals(List.of(user), access.findAllVisible().await().indefinitely());
+    }
+
+    @Test
+    void instructorListsMembersSharingAClub() {
+        loggedInWith("member", "instructor");
+        when(repository.findSharingClubWith(user)).thenReturn(Uni.createFrom().item(List.of(user, sameClubMember)));
+
+        assertEquals(List.of(user, sameClubMember), access.findAllVisible().await().indefinitely());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void adminListsAllMembers() {
+        loggedInWith("admin");
+        final PanacheQuery<MemberEntity> all = mock(PanacheQuery.class);
+        when(all.list()).thenReturn(Uni.createFrom().item(List.of(user, sameClubMember, otherClubMember)));
+        when(repository.findAll()).thenReturn(all);
+
+        assertEquals(List.of(user, sameClubMember, otherClubMember), access.findAllVisible().await().indefinitely());
     }
 
     @Test

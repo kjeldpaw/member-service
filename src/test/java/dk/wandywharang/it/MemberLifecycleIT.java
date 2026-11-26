@@ -20,6 +20,7 @@ import static io.restassured.RestAssured.given;
 import static dk.wandywharang.it.TestRealm.CLUB_A;
 import static dk.wandywharang.it.TestRealm.CLUB_B;
 import static dk.wandywharang.it.TestRealm.CLUB_C;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
@@ -152,34 +153,73 @@ class MemberLifecycleIT {
     }
 
     @Test
-    void memberSeesMembersOfEveryClubTheyBelongToAndNotOthers() throws SQLException {
-        final var memberToken = TestRealm.MEMBER_BC.token();
-        final var inClubB = TestDatabase.insertNewMember(dataSource, "In", "B", Set.of(CLUB_B));
-        final var inClubC = TestDatabase.insertNewMember(dataSource, "In", "C", Set.of(CLUB_C));
-        final var inClubsAAndC = TestDatabase.insertNewMember(dataSource, "In", "AC", Set.of(CLUB_A, CLUB_C));
-        final var onlyInClubA = TestDatabase.insertNewMember(dataSource, "Only", "A", Set.of(CLUB_A));
+    void memberListsOnlyThemselvesAndCannotSeeOthersEvenInASharedClub() throws SQLException {
+        final var member = TestRealm.MEMBER_BC;
+        final var sharesClubB = TestDatabase.insertNewMember(dataSource, "In", "B", Set.of(CLUB_B));
+        final var sharesNone = TestDatabase.insertNewMember(dataSource, "Only", "A", Set.of(CLUB_A));
 
         given()
-                .auth().oauth2(memberToken)
+                .auth().oauth2(member.token())
                 .get("/api/v1/members")
                 .then().statusCode(200)
-                .body("id", hasItems(TestRealm.MEMBER_BC.id().toString(), inClubB.toString(), inClubC.toString(),
-                        inClubsAAndC.toString(), TestRealm.INSTRUCTOR_AB.id().toString()))
-                .body("id", not(hasItem(onlyInClubA.toString())))
-                .body("id", not(hasItem(TestRealm.MEMBER_A.id().toString())));
+                .body("id", contains(member.id().toString()));
 
-        for (final var visible : List.of(inClubB, inClubC, inClubsAAndC)) {
+        for (final var other : List.of(sharesClubB, sharesNone, TestRealm.INSTRUCTOR_AB.id())) {
             given()
-                    .auth().oauth2(memberToken)
+                    .auth().oauth2(member.token())
+                    .get("/api/v1/members/{id}", other)
+                    .then().statusCode(404);
+        }
+    }
+
+    @Test
+    void instructorSeesMembersOfEveryClubTheyBelongToAndNotOthers() throws SQLException {
+        final var instructorToken = TestRealm.INSTRUCTOR_AB.token();
+        final var inClubB = TestDatabase.insertNewMember(dataSource, "In", "B", Set.of(CLUB_B));
+        final var inClubsAAndC = TestDatabase.insertNewMember(dataSource, "In", "AC", Set.of(CLUB_A, CLUB_C));
+        final var onlyInClubC = TestDatabase.insertNewMember(dataSource, "Only", "C", Set.of(CLUB_C));
+
+        given()
+                .auth().oauth2(instructorToken)
+                .get("/api/v1/members")
+                .then().statusCode(200)
+                .body("id", hasItems(TestRealm.INSTRUCTOR_AB.id().toString(), inClubB.toString(),
+                        inClubsAAndC.toString(), TestRealm.MEMBER_A.id().toString(), TestRealm.MEMBER_BC.id().toString()))
+                .body("id", not(hasItem(onlyInClubC.toString())))
+                .body("id", not(hasItem(TestRealm.INSTRUCTOR_C.id().toString())));
+
+        for (final var visible : List.of(inClubB, inClubsAAndC, TestRealm.MEMBER_BC.id())) {
+            given()
+                    .auth().oauth2(instructorToken)
                     .get("/api/v1/members/{id}", visible)
                     .then().statusCode(200)
                     .body("id", equalTo(visible.toString()));
         }
 
         given()
-                .auth().oauth2(memberToken)
-                .get("/api/v1/members/{id}", onlyInClubA)
+                .auth().oauth2(instructorToken)
+                .get("/api/v1/members/{id}", onlyInClubC)
                 .then().statusCode(404);
+    }
+
+    @Test
+    void adminSeesMembersOfEveryClub() throws SQLException {
+        final var adminToken = TestRealm.ADMIN.token();
+        final var onlyInClubC = TestDatabase.insertNewMember(dataSource, "Only", "C", Set.of(CLUB_C));
+
+        given()
+                .auth().oauth2(adminToken)
+                .get("/api/v1/members")
+                .then().statusCode(200)
+                .body("id", hasItems(onlyInClubC.toString(), TestRealm.INSTRUCTOR_AB.id().toString(),
+                        TestRealm.INSTRUCTOR_C.id().toString(), TestRealm.MEMBER_A.id().toString(),
+                        TestRealm.MEMBER_BC.id().toString()));
+
+        given()
+                .auth().oauth2(adminToken)
+                .get("/api/v1/members/{id}", onlyInClubC)
+                .then().statusCode(200)
+                .body("id", equalTo(onlyInClubC.toString()));
     }
 
     @Test

@@ -10,7 +10,6 @@ import dk.wandywharang.entity.MemberEntity;
 import dk.wandywharang.mapper.MemberMapper;
 import dk.wandywharang.repository.ClubRepository;
 import dk.wandywharang.repository.MemberRepository;
-import io.quarkus.hibernate.reactive.panache.PanacheQuery;
 import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
@@ -31,7 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -64,13 +62,6 @@ class MemberServiceImplTest {
         lenient().when(mapper.map(any(MemberEntity.class))).thenReturn(dto);
     }
 
-    @SuppressWarnings("unchecked")
-    private static PanacheQuery<MemberEntity> query(List<MemberEntity> members) {
-        final PanacheQuery<MemberEntity> query = mock(PanacheQuery.class);
-        when(query.list()).thenReturn(Uni.createFrom().item(members));
-        return query;
-    }
-
     private CreateMemberRequest createRequest() {
         return createRequest(Set.of(club.getId()));
     }
@@ -88,28 +79,14 @@ class MemberServiceImplTest {
     }
 
     @Test
-    void adminSeesAllMembers() {
-        final var members = List.of(TestData.member(club), TestData.member(TestData.club()));
-        final var query = query(members);
-        when(memberAccess.isAdmin()).thenReturn(true);
-        when(repository.findAll()).thenReturn(query);
+    void findAllReturnsVisibleMembers() {
+        final var members = List.of(TestData.member(club), TestData.member(club));
+        when(memberAccess.findAllVisible()).thenReturn(Uni.createFrom().item(members));
 
         final var result = service.findAll().await().indefinitely();
 
-        assertEquals(2, result.size());
+        assertEquals(List.of(dto, dto), result);
         verify(repository, times(2)).fetchDetails(any());
-    }
-
-    @Test
-    void othersSeeMembersOfOwnClub() {
-        final var profile = TestData.member(club);
-        when(memberAccess.isAdmin()).thenReturn(false);
-        when(memberAccess.profile()).thenReturn(Uni.createFrom().item(profile));
-        when(repository.findSharingClubWith(profile)).thenReturn(Uni.createFrom().item(List.of(profile)));
-
-        final var result = service.findAll().await().indefinitely();
-
-        assertEquals(List.of(dto), result);
     }
 
     @Test
