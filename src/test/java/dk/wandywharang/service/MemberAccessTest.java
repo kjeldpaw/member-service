@@ -86,7 +86,7 @@ class MemberAccessTest {
     }
 
     @Test
-    void memberCannotEditMembers() {
+    void plainMemberCannotEditMembers() {
         loggedInWith("member");
 
         final var failure = assertThrows(ForbiddenException.class,
@@ -102,14 +102,14 @@ class MemberAccessTest {
     }
 
     @Test
-    void memberCanSeeThemselves() {
+    void plainMemberCanSeeThemselves() {
         loggedInWith("member");
 
         assertSame(user, access.findVisible(user.getId()).await().indefinitely());
     }
 
     @Test
-    void memberOfOwnClubIsHiddenFromPlainMemberAsNotFound() {
+    void plainMemberIsToldMemberOfOwnClubIsNotFound() {
         loggedInWith("member");
 
         assertThrows(NotFoundException.class, () -> access.findVisible(sameClubMember.getId()).await().indefinitely());
@@ -187,7 +187,7 @@ class MemberAccessTest {
     }
 
     @Test
-    void memberCannotAddMembers() {
+    void plainMemberCannotAddMembers() {
         loggedInWith("member");
 
         final var failure = assertThrows(ForbiddenException.class,

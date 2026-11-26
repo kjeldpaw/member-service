@@ -153,7 +153,7 @@ class MemberLifecycleIT {
     }
 
     @Test
-    void memberListsOnlyThemselvesAndCannotSeeOthersEvenInASharedClub() throws SQLException {
+    void plainMemberListsOnlyThemselvesAndCannotSeeOthersEvenInASharedClub() throws SQLException {
         final var member = TestRealm.MEMBER_BC;
         final var sharesClubB = TestDatabase.insertNewMember(dataSource, "In", "B", Set.of(CLUB_B));
         final var sharesNone = TestDatabase.insertNewMember(dataSource, "Only", "A", Set.of(CLUB_A));
@@ -223,7 +223,7 @@ class MemberLifecycleIT {
     }
 
     @Test
-    void membersProfileListsAllTheirClubs() {
+    void plainMembersProfileListsAllTheirClubs() {
         final var member = TestRealm.MEMBER_BC;
 
         given()
