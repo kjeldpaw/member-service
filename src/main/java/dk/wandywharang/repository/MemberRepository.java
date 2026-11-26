@@ -9,9 +9,17 @@ import org.hibernate.reactive.mutiny.Mutiny;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @ApplicationScoped
 public class MemberRepository implements PanacheRepositoryBase<MemberEntity, UUID> {
+    /**
+     * Matches a Member whose first name, last name or full name, in lower case, is like the escaped pattern ?1.
+     */
+    private static final String NAME_CONTAINS = Stream.of("firstName", "lastName", "concat(firstName, ' ', lastName)")
+            .map(name -> "lower(" + name + ") like ?1 escape '\\'")
+            .collect(Collectors.joining(" or "));
 
     /**
      * Finds the Members who share at least one Club with the given Member, including that Member.
@@ -34,8 +42,7 @@ public class MemberRepository implements PanacheRepositoryBase<MemberEntity, UUI
                 .replace("\\", "\\\\")
                 .replace("%", "\\%")
                 .replace("_", "\\_");
-        return find("lower(firstName) like ?1 escape '\\' or lower(lastName) like ?1 escape '\\'"
-                        + " or lower(concat(firstName, ' ', lastName)) like ?1 escape '\\'",
+        return find(NAME_CONTAINS,
                 Sort.by("lastName").and("firstName").and("id"),
                 "%" + escaped + "%")
                 .range(0, limit - 1)

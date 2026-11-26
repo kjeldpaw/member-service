@@ -28,58 +28,59 @@ public class MemberAccess {
     private final SecurityIdentity securityIdentity;
     private final MemberRepository repository;
 
-    private boolean isAdmin() {
-        return securityIdentity.hasRole("admin");
-    }
+    /**
+     * How much of the register the current user may see and edit. A user with several roles gets the widest.
+     */
+    private enum Level { ADMIN, INSTRUCTOR, PLAIN_MEMBER }
 
-    private boolean isInstructor() {
-        return securityIdentity.hasRole("instructor");
+    private Level level() {
+        if (securityIdentity.hasRole("admin")) {
+            return Level.ADMIN;
+        }
+        if (securityIdentity.hasRole("instructor")) {
+            return Level.INSTRUCTOR;
+        }
+        return Level.PLAIN_MEMBER;
     }
 
     /**
      * Lists the Members the current user can see.
      */
     public Uni<List<MemberEntity>> findAllVisible() {
-        if (isAdmin()) {
-            return repository.findAll().list();
-        }
-        if (!isInstructor()) {
-            return profile().map(List::of);
-        }
-        return profile().chain(repository::findSharingClubWith);
+        return switch (level()) {
+            case ADMIN -> repository.findAll().list();
+            case INSTRUCTOR -> profile().chain(repository::findSharingClubWith);
+            case PLAIN_MEMBER -> profile().map(List::of);
+        };
     }
 
     public Uni<MemberEntity> findVisible(UUID id) {
-        if (isAdmin()) {
-            return find(id);
-        }
-        if (!isInstructor()) {
-            return profile().map(Unchecked.function(profile -> {
+        return switch (level()) {
+            case ADMIN -> find(id);
+            case INSTRUCTOR -> find(id).chain(member -> requireSharedClub(member, () -> notFound(id)));
+            case PLAIN_MEMBER -> profile().map(Unchecked.function(profile -> {
                 if (!profile.getId().equals(id)) {
                     throw notFound(id);
                 }
                 return profile;
             }));
-        }
-        return find(id).chain(member -> requireSharedClub(member, () -> notFound(id)));
+        };
     }
 
     public Uni<MemberEntity> findEditable(UUID id) {
-        if (isAdmin()) {
-            return find(id);
-        }
-        if (!isInstructor()) {
-            return Uni.createFrom().failure(new ForbiddenException("Not allowed to edit Members"));
-        }
-        return find(id).chain(member -> requireSharedClub(member,
-                () -> new ForbiddenException(String.format("Member with id = %s shares no Club with you", id))));
+        return switch (level()) {
+            case ADMIN -> find(id);
+            case INSTRUCTOR -> find(id).chain(member -> requireSharedClub(member,
+                    () -> new ForbiddenException(String.format("Member with id = %s shares no Club with you", id))));
+            case PLAIN_MEMBER -> notAllowedToEdit();
+        };
     }
 
     /**
      * Only Admins may delete a Member entirely.
      */
     public Uni<MemberEntity> findDeletable(UUID id) {
-        if (!isAdmin()) {
+        if (level() != Level.ADMIN) {
             return Uni.createFrom().failure(new ForbiddenException("Only Admins may delete Members"));
         }
         return find(id);
@@ -90,18 +91,16 @@ public class MemberAccess {
      * own.
      */
     public Uni<Void> requireEditableClubs(Set<UUID> clubIds) {
-        if (isAdmin()) {
-            return Uni.createFrom().voidItem();
-        }
-        if (!isInstructor()) {
-            return Uni.createFrom().failure(new ForbiddenException("Not allowed to edit Members"));
-        }
-        return profile().invoke(Unchecked.consumer(profile -> {
-            final var notOwn = Ids.notIn(clubIds, profile.clubIds());
-            if (!notOwn.isEmpty()) {
-                throw new ForbiddenException(String.format("Clubs with ids = %s are not your Clubs", notOwn));
-            }
-        })).replaceWithVoid();
+        return switch (level()) {
+            case ADMIN -> Uni.createFrom().voidItem();
+            case INSTRUCTOR -> profile().invoke(Unchecked.consumer(profile -> {
+                final var notOwn = Ids.notIn(clubIds, profile.clubIds());
+                if (!notOwn.isEmpty()) {
+                    throw new ForbiddenException(String.format("Clubs with ids = %s are not your Clubs", notOwn));
+                }
+            })).replaceWithVoid();
+            case PLAIN_MEMBER -> notAllowedToEdit();
+        };
     }
 
     /**
@@ -131,6 +130,10 @@ public class MemberAccess {
             }
             return member;
         }));
+    }
+
+    private static <T> Uni<T> notAllowedToEdit() {
+        return Uni.createFrom().failure(new ForbiddenException("Not allowed to edit Members"));
     }
 
     private static NotFoundException notFound(UUID id) {
