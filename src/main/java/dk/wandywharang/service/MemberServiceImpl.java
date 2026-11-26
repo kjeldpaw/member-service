@@ -34,13 +34,7 @@ public class MemberServiceImpl implements MemberService {
     @WithSession
     @Override
     public Uni<List<Member>> findAll() {
-        if (memberAccess.isAdmin()) {
-            return repository.findAll().list().chain(this::map);
-        } else {
-            return memberAccess.profile()
-                    .chain(profile -> repository.findSharingClubWith(profile))
-                    .chain(this::map);
-        }
+        return memberAccess.findAllVisible().chain(this::map);
     }
 
     @WithSession

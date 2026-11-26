@@ -134,7 +134,7 @@ class MemberDeletionIT {
     }
 
     @Test
-    void memberLoginIsRefusedAndTheMemberIsUnchanged() {
+    void plainMemberIsRefusedAndTheMemberIsUnchanged() {
         final var email = newEmail();
         final var memberId = register(email, CLUB_B, CLUB_C);
 

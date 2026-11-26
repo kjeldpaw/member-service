@@ -103,7 +103,7 @@ class MemberClubsIT {
     }
 
     @Test
-    void memberLoginIsRefusedWhenAddingOrRemovingAClub() throws SQLException {
+    void plainMemberIsRefusedWhenAddingOrRemovingAClub() throws SQLException {
         final var memberToken = TestRealm.MEMBER_BC.token();
         final var member = TestDatabase.insertNewMember(dataSource, "Kim", "Lee", Set.of(CLUB_B, CLUB_C));
 

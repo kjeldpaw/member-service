@@ -23,9 +23,17 @@ public class ExceptionMappers {
     }
 
     private static Response conflict(RuntimeException exception) {
-        return Response.status(Response.Status.CONFLICT)
+        return error(Response.Status.CONFLICT, exception);
+    }
+
+    private static Response error(Response.Status status, RuntimeException exception) {
+        return error(status, exception.getMessage());
+    }
+
+    static Response error(Response.Status status, String message) {
+        return Response.status(status)
                 .type(MediaType.APPLICATION_JSON_TYPE)
-                .entity(new ErrorMessage(exception.getMessage()))
+                .entity(new ErrorMessage(message))
                 .build();
     }
 }
