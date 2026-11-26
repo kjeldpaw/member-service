@@ -11,14 +11,16 @@ import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
- * Loads Members on behalf of the current user. Admins can see and edit all Members. Everyone else can see the Members
- * who share at least one Club with them, and Instructors can also edit those. A user's Clubs are the Clubs of their
- * own Member record.
+ * Loads Members on behalf of the current user. Admins can see and edit all Members. Instructors can see and edit the
+ * Members who share at least one Club with them. A plain Member (neither Admin nor Instructor) can see only their own
+ * Member record, and edit none. A user's Clubs are the Clubs of their own Member record. A Member the user may not see
+ * is reported as not found, so its existence is not revealed.
  */
 @RequestScoped
 @RequiredArgsConstructor
@@ -26,7 +28,7 @@ public class MemberAccess {
     private final SecurityIdentity securityIdentity;
     private final MemberRepository repository;
 
-    public boolean isAdmin() {
+    private boolean isAdmin() {
         return securityIdentity.hasRole("admin");
     }
 
@@ -34,9 +36,30 @@ public class MemberAccess {
         return securityIdentity.hasRole("instructor");
     }
 
+    /**
+     * Lists the Members the current user can see.
+     */
+    public Uni<List<MemberEntity>> findAllVisible() {
+        if (isAdmin()) {
+            return repository.findAll().list();
+        }
+        if (!isInstructor()) {
+            return profile().map(List::of);
+        }
+        return profile().chain(repository::findSharingClubWith);
+    }
+
     public Uni<MemberEntity> findVisible(UUID id) {
         if (isAdmin()) {
             return find(id);
+        }
+        if (!isInstructor()) {
+            return profile().map(Unchecked.function(profile -> {
+                if (!profile.getId().equals(id)) {
+                    throw notFound(id);
+                }
+                return profile;
+            }));
         }
         return find(id).chain(member -> requireSharedClub(member, () -> notFound(id)));
     }
