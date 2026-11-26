@@ -55,7 +55,21 @@ class ExaminerSearchIT {
     }
 
     @Test
-    void adminFindsExaminersByFirstLastOrFullNameIgnoringCase() throws SQLException {
+    void adminFindsExaminersInClubsTheyDoNotBelongTo() throws SQLException {
+        final var lastName = uniqueName();
+        final var examiner = TestDatabase.insertNewMember(dataSource, "Hana", lastName, Set.of(CLUB_C));
+
+        given()
+                .auth().oauth2(TestRealm.ADMIN.token())
+                .queryParam("q", lastName)
+                .get(EXAMINERS)
+                .then().statusCode(200)
+                .body("[0]", equalTo(Map.of("id", examiner.toString(), "firstName", "Hana", "lastName", lastName)))
+                .body("id", contains(examiner.toString()));
+    }
+
+    @Test
+    void adminFindsExaminersByFirstLastOrFullNameIgnoringCase()throws SQLException {
         final var lastName = uniqueName();
         final var inA = TestDatabase.insertNewMember(dataSource, "Hana", lastName, Set.of(CLUB_A));
         final var inBC = TestDatabase.insertNewMember(dataSource, "Jun", lastName, Set.of(CLUB_B, CLUB_C));
