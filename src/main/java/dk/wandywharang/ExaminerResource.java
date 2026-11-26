@@ -2,6 +2,7 @@ package dk.wandywharang;
 
 import dk.wandywharang.api.Examiner;
 import dk.wandywharang.service.ExaminerService;
+import dk.wandywharang.service.QueryTooShortException;
 import io.smallrye.mutiny.Uni;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
@@ -10,7 +11,9 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
+import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
 import java.util.List;
 
@@ -22,12 +25,20 @@ import java.util.List;
 @RequestScoped
 @RequiredArgsConstructor
 public class ExaminerResource {
+    private static final String QUERY = "q";
+
     private final ExaminerService service;
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({"admin", "instructor"})
-    public Uni<List<Examiner>> search(@QueryParam("q") String query) {
+    public Uni<List<Examiner>> search(@QueryParam(QUERY) String query) {
         return service.search(query);
+    }
+
+    @ServerExceptionMapper
+    public Response queryTooShort(QueryTooShortException exception) {
+        return ExceptionMappers.error(Response.Status.BAD_REQUEST,
+                String.format("Query %s must be at least %d characters", QUERY, exception.getMinimumLength()));
     }
 }

@@ -24,7 +24,7 @@ public class ExaminerServiceImpl implements ExaminerService {
     public Uni<List<Examiner>> search(String query) {
         final var text = query == null ? "" : query.strip();
         if (text.length() < MINIMUM_QUERY_LENGTH) {
-            return Uni.createFrom().failure(new QueryTooShortException("q", MINIMUM_QUERY_LENGTH));
+            return Uni.createFrom().failure(new QueryTooShortException(MINIMUM_QUERY_LENGTH));
         }
         return repository.searchByName(text, MAXIMUM_RESULTS)
                 .map(members -> members.stream().map(mapper::map).toList());
