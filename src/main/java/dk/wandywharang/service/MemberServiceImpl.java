@@ -1,8 +1,10 @@
 package dk.wandywharang.service;
 
 import dk.wandywharang.api.CreateMemberRequest;
+import dk.wandywharang.api.CreateProfileRequest;
 import dk.wandywharang.api.Member;
 import dk.wandywharang.api.UpdateMemberRequest;
+import dk.wandywharang.api.UpdateProfileRequest;
 import dk.wandywharang.entity.ClubEntity;
 import dk.wandywharang.entity.MemberEntity;
 import dk.wandywharang.mapper.MemberMapper;
@@ -45,6 +47,38 @@ public class MemberServiceImpl implements MemberService {
                 .map(mapper::map);
     }
 
+    @WithSession
+    @Override
+    public Uni<Member> findProfile() {
+        return memberAccess.profile()
+                .chain(repository::fetchDetails)
+                .map(mapper::map);
+    }
+
+    @WithTransaction
+    @Override
+    public Uni<Member> updateProfile(UpdateProfileRequest request) {
+        return memberAccess.profile()
+                .invoke(member -> mapper.map(request, member))
+                .chain(repository::fetchDetails)
+                .map(mapper::map);
+    }
+
+    /**
+     * The caller already has a Keycloak user, so none is created and no setup email is sent.
+     */
+    @WithTransaction
+    @Override
+    public Uni<Member> createProfile(CreateProfileRequest request) {
+        return memberAccess.caller()
+                .call(caller -> repository.findById(caller.id())
+                        .onItem().ifNotNull().failWith(() -> new AlreadyExistsException(caller.id())))
+                .call(caller -> repository.findByEmail(caller.email())
+                        .onItem().ifNotNull().failWith(() -> new AlreadyExistsException(caller.email())))
+                .chain(caller -> findClubs(request.clubIds())
+                        .chain(clubs -> persist(caller.id(), mapper.map(request, caller.email()), clubs)));
+    }
+
     /**
      * Creates the Keycloak user first, so its id can be used as the member id. If persisting the member fails, the
      * Keycloak user is removed again on a best-effort basis, so the persist failure is what the caller sees. The setup
@@ -57,7 +91,7 @@ public class MemberServiceImpl implements MemberService {
         return memberAccess.requireEditableClubs(request.clubIds())
                 .chain(() -> findClubs(request.clubIds()))
                 .chain(clubs -> registerService.register(request)
-                        .chain(userId -> persist(UUID.fromString(userId), request, clubs)
+                        .chain(userId -> persist(UUID.fromString(userId), mapper.map(request), clubs)
                                 .onFailure().call(() -> registerService.unregister(userId)
                                         .onFailure().invoke(e -> log.warnf(e, "Could not remove Keycloak user %s", userId))
                                         .onFailure().recoverWithNull())
@@ -135,8 +169,7 @@ public class MemberServiceImpl implements MemberService {
         });
     }
 
-    private Uni<Member> persist(UUID id, CreateMemberRequest request, Set<ClubEntity> clubs) {
-        final var entity = mapper.map(request);
+    private Uni<Member> persist(UUID id, MemberEntity entity, Set<ClubEntity> clubs) {
         entity.setId(id);
         entity.setClubs(clubs);
         return repository.persist(entity).map(mapper::map);

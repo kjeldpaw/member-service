@@ -33,6 +33,13 @@ public class MemberRepository implements PanacheRepositoryBase<MemberEntity, UUI
     }
 
     /**
+     * A Member with the email, ignoring case, as Keycloak does, or null if there is none.
+     */
+    public Uni<MemberEntity> findByEmail(String email) {
+        return find("lower(email) = ?1", email.toLowerCase()).firstResult();
+    }
+
+    /**
      * Finds the Members of any Club whose first name, last name or full name contains the text, ignoring case,
      * ordered by last name and then first name, and at most the given number of them.
      */
