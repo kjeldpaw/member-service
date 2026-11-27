@@ -2,6 +2,7 @@ package dk.wandywharang.it;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
 
@@ -67,6 +68,15 @@ public final class TestDatabase {
         final var id = UUID.randomUUID();
         ensureMember(dataSource, id, firstName, lastName, emailOf(id), clubIds);
         return id;
+    }
+
+    public static void setDateOfBirth(DataSource dataSource, UUID memberId, LocalDate dateOfBirth) throws SQLException {
+        try (var connection = dataSource.getConnection();
+             var statement = connection.prepareStatement("UPDATE members SET date_of_birth = ? WHERE id = ?")) {
+            statement.setObject(1, dateOfBirth);
+            statement.setObject(2, memberId);
+            statement.executeUpdate();
+        }
     }
 
     /**

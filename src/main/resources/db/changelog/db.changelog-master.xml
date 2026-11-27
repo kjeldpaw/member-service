@@ -409,4 +409,41 @@
         </createIndex>
     </changeSet>
 
+    <!-- Poom: the black-belt grades for Members under 15, ranked between 1. Kup and 1. Dan, with the wait times of the
+         Dan with the same number. 1. Kup gets the wait time before a Poom or Dan, which was 0. -->
+    <changeSet id="1.4.0" author="kjeldpaw">
+        <update tableName="belts">
+            <column name="rank" valueComputed="rank + 4"/>
+            <where>name LIKE '%. DAN)'</where>
+        </update>
+        <update tableName="belts">
+            <column name="wait_time" valueNumeric="365"/>
+            <where>id = '16f1e0cc-3421-4444-bfdd-a1206c7769b0'</where>
+        </update>
+        <insert tableName="belts">
+            <column name="id" value="8b0e5c52-6f3a-4f0e-9a51-5c7e2b1d0f01"/>
+            <column name="name" value="Black and red Belt (1. POOM)"/>
+            <column name="wait_time" valueNumeric="365"/>
+            <column name="rank" valueNumeric="20"/>
+        </insert>
+        <insert tableName="belts">
+            <column name="id" value="8b0e5c52-6f3a-4f0e-9a51-5c7e2b1d0f02"/>
+            <column name="name" value="Black and red Belt (2. POOM)"/>
+            <column name="wait_time" valueNumeric="730"/>
+            <column name="rank" valueNumeric="21"/>
+        </insert>
+        <insert tableName="belts">
+            <column name="id" value="8b0e5c52-6f3a-4f0e-9a51-5c7e2b1d0f03"/>
+            <column name="name" value="Black and red Belt (3. POOM)"/>
+            <column name="wait_time" valueNumeric="1096"/>
+            <column name="rank" valueNumeric="22"/>
+        </insert>
+        <insert tableName="belts">
+            <column name="id" value="8b0e5c52-6f3a-4f0e-9a51-5c7e2b1d0f04"/>
+            <column name="name" value="Black and red Belt (4. POOM)"/>
+            <column name="wait_time" valueNumeric="1460"/>
+            <column name="rank" valueNumeric="23"/>
+        </insert>
+    </changeSet>
+
 </databaseChangeLog>

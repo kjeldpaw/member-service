@@ -8,6 +8,7 @@ import dk.wandywharang.entity.ClubEntity;
 import dk.wandywharang.entity.GraduationEntity;
 import dk.wandywharang.entity.MemberEntity;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
@@ -43,6 +44,14 @@ public final class TestData {
         return withId(new BeltEntity());
     }
 
+    public static BeltEntity belt(String name, int waitDays, int rank) {
+        final var belt = belt();
+        set(belt, "name", name);
+        set(belt, "waitTime", Duration.ofDays(waitDays));
+        set(belt, "rank", rank);
+        return belt;
+    }
+
     public static GraduationEntity graduation(GraduationEntity previous) {
         final var graduation = withId(new GraduationEntity());
         graduation.setDate(LocalDate.of(2026, 6, 1));
@@ -67,11 +76,15 @@ public final class TestData {
     }
 
     public static <T> T withId(T entity) {
+        set(entity, "id", UUID.randomUUID());
+        return entity;
+    }
+
+    private static void set(Object entity, String name, Object value) {
         try {
-            final var field = entity.getClass().getDeclaredField("id");
+            final var field = entity.getClass().getDeclaredField(name);
             field.setAccessible(true);
-            field.set(entity, UUID.randomUUID());
-            return entity;
+            field.set(entity, value);
         } catch (ReflectiveOperationException e) {
             throw new IllegalStateException(e);
         }

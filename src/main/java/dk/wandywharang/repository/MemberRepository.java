@@ -33,6 +33,13 @@ public class MemberRepository implements PanacheRepositoryBase<MemberEntity, UUI
     }
 
     /**
+     * Finds the Members of every Club who have at least one Graduation, ordered by last name and then first name.
+     */
+    public Uni<List<MemberEntity>> findGraduated() {
+        return find("graduation is not null", Sort.by("lastName").and("firstName").and("id")).list();
+    }
+
+    /**
      * A Member with the email, ignoring case, as Keycloak does, or null if there is none.
      */
     public Uni<MemberEntity> findByEmail(String email) {
