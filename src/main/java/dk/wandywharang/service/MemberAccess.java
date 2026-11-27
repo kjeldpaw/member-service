@@ -22,8 +22,9 @@ import java.util.function.Supplier;
 /**
  * Loads Members on behalf of the current user. Admins can see and edit all Members. Instructors can see and edit the
  * Members who share at least one Club with them. A plain Member (neither Admin nor Instructor) can see only their own
- * Member record, and edit none. A user's Clubs are the Clubs of their own Member record. A Member the user may not see
- * is reported as not found, so its existence is not revealed.
+ * Member record, and edit none through {@code /api/v1/members}; they edit their own Profile through
+ * {@code /api/v1/profile} instead. A user's Clubs are the Clubs of their own Member record. A Member the user may not
+ * see is reported as not found, so its existence is not revealed.
  */
 @RequestScoped
 @RequiredArgsConstructor
