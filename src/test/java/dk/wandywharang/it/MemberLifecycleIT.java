@@ -16,6 +16,7 @@ import java.util.UUID;
 
 import static dk.wandywharang.it.MemberRequests.memberBody;
 import static dk.wandywharang.it.MemberRequests.newEmail;
+import static dk.wandywharang.it.MemberRequests.updateBody;
 import static io.restassured.RestAssured.given;
 import static dk.wandywharang.it.TestRealm.CLUB_A;
 import static dk.wandywharang.it.TestRealm.CLUB_B;
@@ -240,11 +241,7 @@ class MemberLifecycleIT {
         final var sharesClubB = TestDatabase.insertNewMember(dataSource, "Kim", "Lee", Set.of(CLUB_B, CLUB_C));
         final var sharesNone = TestDatabase.insertNewMember(dataSource, "Sam", "Doe", Set.of(CLUB_C));
 
-        final var updateBody = Map.of(
-                "firstName", "Updated",
-                "lastName", "Lee",
-                "address", Map.of("street", "Main Street 1", "city", "Aarhus", "zipCode", "8000"),
-                "email", newEmail());
+        final var updateBody = updateBody("Updated", newEmail());
 
         given()
                 .auth().oauth2(instructorToken)
@@ -268,25 +265,17 @@ class MemberLifecycleIT {
 
         given()
                 .auth().oauth2(TestRealm.ADMIN.token())
-                .contentType("application/json").body(updateBody("Updated", other + "@example.com"))
+                .contentType("application/json").body(updateBody("Updated", TestDatabase.emailOf(other)))
                 .put("/api/v1/members/{id}", member)
                 .then().statusCode(200)
                 .body("firstName", equalTo("Updated"))
-                .body("email", equalTo(member + "@example.com"));
+                .body("email", equalTo(TestDatabase.emailOf(member)));
 
         given()
                 .auth().oauth2(TestRealm.ADMIN.token())
                 .get("/api/v1/members/{id}", member)
                 .then().statusCode(200)
-                .body("email", equalTo(member + "@example.com"));
-    }
-
-    private static Map<String, Object> updateBody(String firstName, String email) {
-        return Map.of(
-                "firstName", firstName,
-                "lastName", "Lee",
-                "address", Map.of("street", "Main Street 1", "city", "Aarhus", "zipCode", "8000"),
-                "email", email);
+                .body("email", equalTo(TestDatabase.emailOf(member)));
     }
 
     @Test

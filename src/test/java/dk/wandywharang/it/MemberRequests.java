@@ -30,6 +30,14 @@ public final class MemberRequests {
                 "clubIds", Set.of(clubIds));
     }
 
+    public static Map<String, Object> updateBody(String firstName, String email) {
+        return Map.of(
+                "firstName", firstName,
+                "lastName", "Lee",
+                "address", Map.of("street", "Main Street 1", "city", "Aarhus", "zipCode", "8000"),
+                "email", email);
+    }
+
     /**
      * Registers a Member over the API as an Admin, so the Member also has a Keycloak user.
      *
