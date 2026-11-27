@@ -401,4 +401,12 @@
         <dropColumn tableName="members" columnName="club_id"/>
     </changeSet>
 
+    <!-- One Member per email, ignoring case as Keycloak does. Fails if members already holds such duplicates, which
+         are resolved by hand first. -->
+    <changeSet id="1.3.0" author="kjeldpaw">
+        <createIndex tableName="members" indexName="members_email_lower_key" unique="true">
+            <column name="lower(email)" computed="true"/>
+        </createIndex>
+    </changeSet>
+
 </databaseChangeLog>

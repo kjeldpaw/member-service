@@ -65,8 +65,15 @@ public final class TestDatabase {
     public static UUID insertNewMember(DataSource dataSource, String firstName, String lastName, Set<UUID> clubIds)
             throws SQLException {
         final var id = UUID.randomUUID();
-        ensureMember(dataSource, id, firstName, lastName, id + "@example.com", clubIds);
+        ensureMember(dataSource, id, firstName, lastName, emailOf(id), clubIds);
         return id;
+    }
+
+    /**
+     * The email {@link #insertNewMember} gives the Member with that id.
+     */
+    public static String emailOf(UUID id) {
+        return id + "@example.com";
     }
 
     /**

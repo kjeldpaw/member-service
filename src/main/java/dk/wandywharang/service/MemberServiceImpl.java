@@ -71,6 +71,7 @@ public class MemberServiceImpl implements MemberService {
     @Override
     public Uni<Member> createProfile(CreateProfileRequest request) {
         return memberAccess.caller()
+                // Concurrent creates can all pass these checks; the database constraints are the backstop, see persist.
                 .call(caller -> repository.findById(caller.id())
                         .onItem().ifNotNull().failWith(() -> new AlreadyExistsException(caller.id())))
                 .call(caller -> repository.findByEmail(caller.email())
@@ -169,10 +170,16 @@ public class MemberServiceImpl implements MemberService {
         });
     }
 
+    /**
+     * Flushes the new Member, so a Member stored meanwhile with the same id or email fails here, inside the caller's
+     * chain, as an {@link AlreadyExistsException}, and not at commit.
+     */
     private Uni<Member> persist(UUID id, MemberEntity entity, Set<ClubEntity> clubs) {
         entity.setId(id);
         entity.setClubs(clubs);
-        return repository.persist(entity).map(mapper::map);
+        return repository.persistAndFlush(entity)
+                .onFailure().transform(failure -> MemberConstraints.translateViolationOrPassThrough(failure, entity))
+                .map(mapper::map);
     }
 
     /**
