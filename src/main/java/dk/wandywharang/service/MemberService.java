@@ -3,6 +3,7 @@ package dk.wandywharang.service;
 import dk.wandywharang.api.CreateMemberRequest;
 import dk.wandywharang.api.Member;
 import dk.wandywharang.api.UpdateMemberRequest;
+import dk.wandywharang.api.UpdateProfileRequest;
 import io.smallrye.mutiny.Uni;
 
 import java.util.List;
@@ -18,6 +19,11 @@ public interface MemberService {
      * The current user's own Member record, their Profile.
      */
     Uni<Member> findProfile();
+
+    /**
+     * Updates the current user's Profile. Every role may do this, but it never changes the email or the Clubs.
+     */
+    Uni<Member> updateProfile(UpdateProfileRequest request);
 
     Uni<Member> create(CreateMemberRequest request);
 

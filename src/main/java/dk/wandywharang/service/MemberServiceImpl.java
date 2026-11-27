@@ -3,6 +3,7 @@ package dk.wandywharang.service;
 import dk.wandywharang.api.CreateMemberRequest;
 import dk.wandywharang.api.Member;
 import dk.wandywharang.api.UpdateMemberRequest;
+import dk.wandywharang.api.UpdateProfileRequest;
 import dk.wandywharang.entity.ClubEntity;
 import dk.wandywharang.entity.MemberEntity;
 import dk.wandywharang.mapper.MemberMapper;
@@ -49,6 +50,15 @@ public class MemberServiceImpl implements MemberService {
     @Override
     public Uni<Member> findProfile() {
         return memberAccess.profile()
+                .chain(repository::fetchDetails)
+                .map(mapper::map);
+    }
+
+    @WithTransaction
+    @Override
+    public Uni<Member> updateProfile(UpdateProfileRequest request) {
+        return memberAccess.profile()
+                .invoke(member -> mapper.map(request, member))
                 .chain(repository::fetchDetails)
                 .map(mapper::map);
     }
