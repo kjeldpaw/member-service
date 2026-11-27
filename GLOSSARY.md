@@ -21,7 +21,8 @@ _Avoid_: User, athlete
 
 **Profile**:
 The Member record of the person who is logged in, as they see it
-themselves. Everyone who can log in is a Member, so everyone has a Profile.
+themselves. Everyone who can log in should be a Member; someone who logs in
+without a Member record creates their Profile first.
 _Avoid_: Account, user data
 
 **Reference**:
