@@ -71,19 +71,11 @@ public class MemberServiceImpl implements MemberService {
     @Override
     public Uni<Member> createProfile(CreateProfileRequest request) {
         return memberAccess.caller()
-                .chain(caller -> repository.findById(caller.id())
-                        .invoke(existing -> {
-                            if (existing != null) {
-                                throw new AlreadyExistsException(caller.id());
-                            }
-                        })
-                        .chain(() -> repository.existsByEmail(caller.email()))
-                        .invoke(taken -> {
-                            if (taken) {
-                                throw new AlreadyExistsException(caller.email());
-                            }
-                        })
-                        .chain(() -> findClubs(request.clubIds()))
+                .call(caller -> repository.findById(caller.id())
+                        .onItem().ifNotNull().failWith(() -> new AlreadyExistsException(caller.id())))
+                .call(caller -> repository.findByEmail(caller.email())
+                        .onItem().ifNotNull().failWith(() -> new AlreadyExistsException(caller.email())))
+                .chain(caller -> findClubs(request.clubIds())
                         .chain(clubs -> {
                             final var entity = mapper.map(request);
                             entity.setId(caller.id());
