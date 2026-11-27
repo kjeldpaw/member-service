@@ -19,6 +19,11 @@ A person registered in Wandy Wha Rang who belongs to one or more Clubs.
 Not the same as the `member` login role, which any person who can log in has.
 _Avoid_: User, athlete
 
+**Profile**:
+The Member record of the person who is logged in, as they see it
+themselves. Everyone who can log in is a Member, so everyone has a Profile.
+_Avoid_: Account, user data
+
 **Reference**:
 A Member's number in an outside register, either Wandy Wha Rang's or
 Kukkiwon's.
@@ -44,7 +49,8 @@ _Avoid_: Grader, graduatedBy
 ## Roles
 
 **Admin**:
-A person who manages all Clubs and Members. An Admin need not be a Member.
+A Member who manages all Clubs and Members, not just those of their own
+Clubs.
 
 **Instructor**:
 A Member who manages the Members of their own Clubs. An Instructor is an
