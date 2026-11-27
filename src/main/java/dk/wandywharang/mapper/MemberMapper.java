@@ -1,6 +1,7 @@
 package dk.wandywharang.mapper;
 
 import dk.wandywharang.api.CreateMemberRequest;
+import dk.wandywharang.api.CreateProfileRequest;
 import dk.wandywharang.api.Member;
 import dk.wandywharang.api.UpdateMemberRequest;
 import dk.wandywharang.api.UpdateProfileRequest;
@@ -33,6 +34,16 @@ public interface MemberMapper {
     @Mapping(target = "phone", expression = "java(request.phone().orElse(null))")
     @Mapping(target = "dateOfBirth", expression = "java(request.dateOfBirth().orElse(null))")
     MemberEntity map(UpdateMemberRequest request, @MappingTarget MemberEntity entity);
+
+    // The id and email come from the caller's token and the Clubs are resolved by the service
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "email", ignore = true)
+    @Mapping(target = "clubs", ignore = true)
+    @Mapping(target = "graduation", ignore = true)
+    @Mapping(target = "references", ignore = true)
+    @Mapping(target = "phone", expression = "java(request.phone().orElse(null))")
+    @Mapping(target = "dateOfBirth", expression = "java(request.dateOfBirth().orElse(null))")
+    MemberEntity map(CreateProfileRequest request);
 
     // A person cannot change their own email, which is their Keycloak login, or their own Clubs.
     @Mapping(target = "id", ignore = true)

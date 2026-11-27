@@ -11,12 +11,16 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import static dk.wandywharang.it.TestRealm.CLUB_A;
 import static dk.wandywharang.it.TestRealm.CLUB_B;
+import static dk.wandywharang.it.TestRealm.CLUB_C;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
@@ -123,6 +127,37 @@ class ProfileIT {
                 .contentType("application/json").body(profileBody())
                 .put(PROFILE)
                 .then().statusCode(404);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"member", "instructor", "admin"})
+    void everyRoleWithoutAMemberRecordCanCreateTheirProfileInAnyClubs(String role) {
+        final var person = TestRealm.newPerson(role);
+        final var token = person.token();
+
+        given()
+                .auth().oauth2(token)
+                .contentType("application/json").body(createBody(CLUB_B, CLUB_C))
+                .post(PROFILE)
+                .then().statusCode(201)
+                .body("id", equalTo(person.id().toString()))
+                .body("firstName", equalTo("Sam"))
+                .body("email", equalTo(person.username()))
+                .body("clubs.id", containsInAnyOrder(CLUB_B.toString(), CLUB_C.toString()));
+
+        given()
+                .auth().oauth2(token)
+                .get(PROFILE)
+                .then().statusCode(200)
+                .body("id", equalTo(person.id().toString()))
+                .body("email", equalTo(person.username()))
+                .body("clubs.id", containsInAnyOrder(CLUB_B.toString(), CLUB_C.toString()));
+    }
+
+    private static Map<String, Object> createBody(UUID... clubIds) {
+        final var body = new HashMap<>(profileBody());
+        body.put("clubIds", Arrays.stream(clubIds).map(UUID::toString).toList());
+        return body;
     }
 
     private static Map<String, Object> profileBody() {
