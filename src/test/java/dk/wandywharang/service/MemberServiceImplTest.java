@@ -170,7 +170,7 @@ class MemberServiceImplTest {
         when(mapper.map(request)).thenReturn(entity);
         when(repository.persistAndFlush(any(MemberEntity.class))).thenReturn(Uni.createFrom().failure(
                 new ConstraintViolationException("duplicate key", new SQLException("duplicate key", "23505"),
-                        "members_email_lower_key")));
+                        MemberConstraints.EMAIL)));
         when(registerService.unregister(userId)).thenReturn(Uni.createFrom().voidItem());
 
         final var failure = assertThrows(AlreadyExistsException.class,

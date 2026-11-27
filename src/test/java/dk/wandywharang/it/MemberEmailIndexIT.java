@@ -34,7 +34,7 @@ class MemberEmailIndexIT {
         final var member = TestDatabase.insertNewMember(dataSource, "Kim", "Lee", Set.of(CLUB_A));
 
         final var refused = assertThrows(PSQLException.class, () -> TestDatabase.ensureMember(dataSource,
-                UUID.randomUUID(), "Sam", "Doe", (member + "@EXAMPLE.com").toUpperCase(), Set.of(CLUB_A)));
+                UUID.randomUUID(), "Sam", "Doe", TestDatabase.emailOf(member).toUpperCase(), Set.of(CLUB_A)));
 
         assertEquals("members_email_lower_key", refused.getServerErrorMessage().getConstraint());
     }
