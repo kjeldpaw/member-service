@@ -177,7 +177,7 @@ public class MemberServiceImpl implements MemberService {
         entity.setId(id);
         entity.setClubs(clubs);
         return repository.persistAndFlush(entity)
-                .onFailure().transform(failure -> MemberConstraints.alreadyExists(failure, entity))
+                .onFailure().transform(failure -> MemberConstraints.translateViolationOrPassThrough(failure, entity))
                 .map(mapper::map);
     }
 

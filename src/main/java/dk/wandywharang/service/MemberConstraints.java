@@ -22,20 +22,17 @@ final class MemberConstraints {
     }
 
     /**
-     * The {@link AlreadyExistsException} for a failure that broke one of the constraints when storing the Member, or
-     * the failure itself otherwise.
+     * Translates a failure that broke one of the constraints when storing the Member into an
+     * {@link AlreadyExistsException}, and returns any other failure unchanged.
      */
-    static Throwable alreadyExists(Throwable failure, MemberEntity member) {
+    static Throwable translateViolationOrPassThrough(Throwable failure, MemberEntity member) {
         for (var cause = failure; cause != null; cause = cause.getCause()) {
             if (cause instanceof ConstraintViolationException violation && violation.getConstraintName() != null) {
-                switch (violation.getConstraintName()) {
-                    case PRIMARY_KEY:
-                        return new AlreadyExistsException(member.getId());
-                    case EMAIL:
-                        return new AlreadyExistsException(member.getEmail());
-                    default:
-                        return failure;
-                }
+                return switch (violation.getConstraintName()) {
+                    case PRIMARY_KEY -> new AlreadyExistsException(member.getId());
+                    case EMAIL -> new AlreadyExistsException(member.getEmail());
+                    default -> failure;
+                };
             }
         }
         return failure;
