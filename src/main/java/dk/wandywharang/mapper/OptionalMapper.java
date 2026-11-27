@@ -20,4 +20,8 @@ public interface OptionalMapper {
     default Optional<Graduation> map(Graduation value) {
         return Optional.ofNullable(value);
     }
+
+    default <T> T unwrap(Optional<T> value) {
+        return value.orElse(null);
+    }
 }

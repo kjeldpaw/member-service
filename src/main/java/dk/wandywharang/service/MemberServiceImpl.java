@@ -69,28 +69,14 @@ public class MemberServiceImpl implements MemberService {
      */
     @WithTransaction
     @Override
-    public Uni<Member> createProfile(UUID id, String email, CreateProfileRequest request) {
-        return repository.findById(id)
-                .invoke(existing -> {
-                    if (existing != null) {
-                        throw new AlreadyExistsException(id);
-                    }
-                })
-                .chain(() -> repository.existsByEmail(email))
-                .invoke(taken -> {
-                    if (taken) {
-                        throw new AlreadyExistsException(email);
-                    }
-                })
-                .chain(() -> findClubs(request.clubIds()))
-                .chain(clubs -> {
-                    final var entity = mapper.map(request);
-                    entity.setId(id);
-                    entity.setEmail(email);
-                    entity.setClubs(clubs);
-                    return repository.persist(entity);
-                })
-                .map(mapper::map);
+    public Uni<Member> createProfile(CreateProfileRequest request) {
+        return memberAccess.caller()
+                .call(caller -> repository.findById(caller.id())
+                        .onItem().ifNotNull().failWith(() -> new AlreadyExistsException(caller.id())))
+                .call(caller -> repository.findByEmail(caller.email())
+                        .onItem().ifNotNull().failWith(() -> new AlreadyExistsException(caller.email())))
+                .chain(caller -> findClubs(request.clubIds())
+                        .chain(clubs -> persist(caller.id(), mapper.map(request, caller.email()), clubs)));
     }
 
     /**
@@ -105,7 +91,7 @@ public class MemberServiceImpl implements MemberService {
         return memberAccess.requireEditableClubs(request.clubIds())
                 .chain(() -> findClubs(request.clubIds()))
                 .chain(clubs -> registerService.register(request)
-                        .chain(userId -> persist(UUID.fromString(userId), request, clubs)
+                        .chain(userId -> persist(UUID.fromString(userId), mapper.map(request), clubs)
                                 .onFailure().call(() -> registerService.unregister(userId)
                                         .onFailure().invoke(e -> log.warnf(e, "Could not remove Keycloak user %s", userId))
                                         .onFailure().recoverWithNull())
@@ -183,8 +169,7 @@ public class MemberServiceImpl implements MemberService {
         });
     }
 
-    private Uni<Member> persist(UUID id, CreateMemberRequest request, Set<ClubEntity> clubs) {
-        final var entity = mapper.map(request);
+    private Uni<Member> persist(UUID id, MemberEntity entity, Set<ClubEntity> clubs) {
         entity.setId(id);
         entity.setClubs(clubs);
         return repository.persist(entity).map(mapper::map);

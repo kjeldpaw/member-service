@@ -33,10 +33,10 @@ public class MemberRepository implements PanacheRepositoryBase<MemberEntity, UUI
     }
 
     /**
-     * Whether a Member has the email, ignoring case, as Keycloak does.
+     * A Member with the email, ignoring case, as Keycloak does, or null if there is none.
      */
-    public Uni<Boolean> existsByEmail(String email) {
-        return count("lower(email) = ?1", email.toLowerCase()).map(count -> count > 0);
+    public Uni<MemberEntity> findByEmail(String email) {
+        return find("lower(email) = ?1", email.toLowerCase()).firstResult();
     }
 
     /**

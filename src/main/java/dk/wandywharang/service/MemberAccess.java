@@ -6,9 +6,12 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import jakarta.enterprise.context.RequestScoped;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.eclipse.microprofile.jwt.Claims;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.util.Collections;
 import java.util.List;
@@ -19,8 +22,9 @@ import java.util.function.Supplier;
 /**
  * Loads Members on behalf of the current user. Admins can see and edit all Members. Instructors can see and edit the
  * Members who share at least one Club with them. A plain Member (neither Admin nor Instructor) can see only their own
- * Member record, and edit none. A user's Clubs are the Clubs of their own Member record. A Member the user may not see
- * is reported as not found, so its existence is not revealed.
+ * Member record, and edit none through {@code /api/v1/members}; they edit their own Profile through
+ * {@code /api/v1/profile} instead. A user's Clubs are the Clubs of their own Member record. A Member the user may not
+ * see is reported as not found, so its existence is not revealed.
  */
 @RequestScoped
 @RequiredArgsConstructor
@@ -112,6 +116,21 @@ public class MemberAccess {
         return requireEditableClubs(Set.of(clubId)).chain(() -> find(id));
     }
 
+    /**
+     * The logged-in person's id and email, from their token. Fails with a bad request if the token has no email.
+     */
+    public Uni<Caller> caller() {
+        final var principal = securityIdentity.getPrincipal();
+        final String email = principal instanceof JsonWebToken token ? token.getClaim(Claims.email) : null;
+        if (email == null || email.isBlank()) {
+            return Uni.createFrom().failure(new BadRequestException("The token has no email"));
+        }
+        return Uni.createFrom().item(new Caller(UUID.fromString(principal.getName()), email));
+    }
+
+    /**
+     * The logged-in person's own Member record, or not found if they have none.
+     */
     public Uni<MemberEntity> profile() {
         final var name = securityIdentity.getPrincipal().getName();
         return repository.findById(UUID.fromString(name))

@@ -17,21 +17,21 @@ public interface MemberService {
     Uni<Member> findById(UUID id);
 
     /**
-     * The current user's own Member record, their Profile.
+     * The logged-in person's own Member record, their Profile.
      */
     Uni<Member> findProfile();
 
     /**
-     * Updates the current user's Profile. Every role may do this, but it never changes the email or the Clubs.
+     * Updates the logged-in person's Profile. Every role may do this, but it never changes the email or the Clubs.
      */
     Uni<Member> updateProfile(UpdateProfileRequest request);
 
     /**
-     * Creates the Member record of a logged-in person who has none, with their Keycloak user id and email, in any
+     * Creates the Member record of the logged-in person, with the Keycloak user id and email from their token, in any
      * Clubs. Fails with {@link AlreadyExistsException} if they already have a Member record or another Member has the
      * email.
      */
-    Uni<Member> createProfile(UUID id, String email, CreateProfileRequest request);
+    Uni<Member> createProfile(CreateProfileRequest request);
 
     Uni<Member> create(CreateMemberRequest request);
 
