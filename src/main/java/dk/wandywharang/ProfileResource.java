@@ -8,7 +8,6 @@ import io.smallrye.mutiny.Uni;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -17,11 +16,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import lombok.RequiredArgsConstructor;
-import org.eclipse.microprofile.jwt.Claims;
-import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.resteasy.reactive.ResponseStatus;
-
-import java.util.UUID;
 
 /**
  * The logged-in person's own Member record, their Profile, open to every role.
@@ -32,7 +27,6 @@ import java.util.UUID;
 @RolesAllowed({"member", "admin", "instructor"})
 public class ProfileResource {
     private final MemberService memberService;
-    private final JsonWebToken token;
 
     /**
      * The caller's Profile, or 404 if they have no Member record.
@@ -62,10 +56,6 @@ public class ProfileResource {
     @Produces(MediaType.APPLICATION_JSON)
     @ResponseStatus(201)
     public Uni<Member> create(@Valid CreateProfileRequest request) {
-        final String email = token.getClaim(Claims.email);
-        if (email == null || email.isBlank()) {
-            throw new BadRequestException("The token has no email");
-        }
-        return memberService.createProfile(UUID.fromString(token.getSubject()), email, request);
+        return memberService.createProfile(request);
     }
 }

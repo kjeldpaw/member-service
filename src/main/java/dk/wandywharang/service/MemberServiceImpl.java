@@ -69,27 +69,28 @@ public class MemberServiceImpl implements MemberService {
      */
     @WithTransaction
     @Override
-    public Uni<Member> createProfile(UUID id, String email, CreateProfileRequest request) {
-        return repository.findById(id)
-                .invoke(existing -> {
-                    if (existing != null) {
-                        throw new AlreadyExistsException(id);
-                    }
-                })
-                .chain(() -> repository.existsByEmail(email))
-                .invoke(taken -> {
-                    if (taken) {
-                        throw new AlreadyExistsException(email);
-                    }
-                })
-                .chain(() -> findClubs(request.clubIds()))
-                .chain(clubs -> {
-                    final var entity = mapper.map(request);
-                    entity.setId(id);
-                    entity.setEmail(email);
-                    entity.setClubs(clubs);
-                    return repository.persist(entity);
-                })
+    public Uni<Member> createProfile(CreateProfileRequest request) {
+        return memberAccess.caller()
+                .chain(caller -> repository.findById(caller.id())
+                        .invoke(existing -> {
+                            if (existing != null) {
+                                throw new AlreadyExistsException(caller.id());
+                            }
+                        })
+                        .chain(() -> repository.existsByEmail(caller.email()))
+                        .invoke(taken -> {
+                            if (taken) {
+                                throw new AlreadyExistsException(caller.email());
+                            }
+                        })
+                        .chain(() -> findClubs(request.clubIds()))
+                        .chain(clubs -> {
+                            final var entity = mapper.map(request);
+                            entity.setId(caller.id());
+                            entity.setEmail(caller.email());
+                            entity.setClubs(clubs);
+                            return repository.persist(entity);
+                        }))
                 .map(mapper::map);
     }
 

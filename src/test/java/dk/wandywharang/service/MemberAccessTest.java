@@ -6,8 +6,11 @@ import dk.wandywharang.repository.MemberRepository;
 import io.quarkus.hibernate.reactive.panache.PanacheQuery;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
+import org.eclipse.microprofile.jwt.Claims;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -193,5 +196,27 @@ class MemberAccessTest {
         final var failure = assertThrows(ForbiddenException.class,
                 () -> access.requireEditableClubs(user.clubIds()).await().indefinitely());
         assertEquals("Not allowed to edit Members", failure.getMessage());
+    }
+
+    @Test
+    void callerIsTheLoggedInPersonsIdAndEmail() {
+        loggedInAs(user.getId(), "kim@example.com");
+
+        assertEquals(new Caller(user.getId(), "kim@example.com"), access.caller().await().indefinitely());
+    }
+
+    @Test
+    void callerWithoutAnEmailIsABadRequest() {
+        loggedInAs(user.getId(), null);
+
+        final var failure = assertThrows(BadRequestException.class, () -> access.caller().await().indefinitely());
+        assertEquals("The token has no email", failure.getMessage());
+    }
+
+    private void loggedInAs(UUID id, String email) {
+        final var token = mock(JsonWebToken.class);
+        lenient().when(token.getName()).thenReturn(id.toString());
+        lenient().when(token.<String>getClaim(Claims.email)).thenReturn(email);
+        when(securityIdentity.getPrincipal()).thenReturn(token);
     }
 }
