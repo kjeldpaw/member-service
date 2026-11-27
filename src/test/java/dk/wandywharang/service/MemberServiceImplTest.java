@@ -13,12 +13,14 @@ import dk.wandywharang.repository.MemberRepository;
 import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
+import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -154,6 +156,27 @@ class MemberServiceImplTest {
         assertThrows(IllegalStateException.class, () -> service.create(request).await().indefinitely());
         verify(registerService).unregister(userId);
         verify(registerService, never()).sendSetupEmail(anyString());
+    }
+
+    @Test
+    void createIsAConflictAndRemovesKeycloakUserWhenTheDatabaseAlreadyHasTheEmail() {
+        final var userId = UUID.randomUUID().toString();
+        final var request = createRequest();
+        final var entity = new MemberEntity();
+        entity.setEmail("kim@example.com");
+        when(memberAccess.requireEditableClubs(Set.of(club.getId()))).thenReturn(Uni.createFrom().voidItem());
+        when(clubRepository.findByIds(Set.of(club.getId()))).thenReturn(Uni.createFrom().item(Set.of(club)));
+        when(registerService.register(request)).thenReturn(Uni.createFrom().item(userId));
+        when(mapper.map(request)).thenReturn(entity);
+        when(repository.persistAndFlush(any(MemberEntity.class))).thenReturn(Uni.createFrom().failure(
+                new ConstraintViolationException("duplicate key", new SQLException("duplicate key", "23505"),
+                        "members_email_lower_key")));
+        when(registerService.unregister(userId)).thenReturn(Uni.createFrom().voidItem());
+
+        final var failure = assertThrows(AlreadyExistsException.class,
+                () -> service.create(request).await().indefinitely());
+        assertEquals("A person with email kim@example.com already exists", failure.getMessage());
+        verify(registerService).unregister(userId);
     }
 
     @Test
