@@ -154,6 +154,71 @@ class ProfileIT {
                 .body("clubs.id", containsInAnyOrder(CLUB_B.toString(), CLUB_C.toString()));
     }
 
+    @Test
+    void createIsAConflictForACallerWhoAlreadyHasAMemberRecordAndNothingChanges() throws SQLException {
+        final var person = TestRealm.newPerson("member");
+        TestDatabase.ensureMember(dataSource, person.id(), "Kim", "Lee", person.username(), Set.of(CLUB_A));
+        final var token = person.token();
+
+        given()
+                .auth().oauth2(token)
+                .contentType("application/json").body(createBody(CLUB_B))
+                .post(PROFILE)
+                .then().statusCode(409)
+                .contentType("application/json")
+                .body("message", equalTo("A Member with id = " + person.id() + " already exists"));
+
+        given()
+                .auth().oauth2(token)
+                .get(PROFILE)
+                .then().statusCode(200)
+                .body("firstName", equalTo("Kim"))
+                .body("clubs.id", containsInAnyOrder(CLUB_A.toString()));
+    }
+
+    @Test
+    void createIsAConflictWhenAnotherMemberHasTheCallersEmail() throws SQLException {
+        final var person = TestRealm.newPerson("member");
+        TestDatabase.ensureMember(dataSource, UUID.randomUUID(), "Kim", "Lee", person.username().toUpperCase(),
+                Set.of(CLUB_A));
+        final var token = person.token();
+
+        given()
+                .auth().oauth2(token)
+                .contentType("application/json").body(createBody(CLUB_A))
+                .post(PROFILE)
+                .then().statusCode(409)
+                .contentType("application/json")
+                .body("message", equalTo("A person with email " + person.username() + " already exists"));
+
+        given()
+                .auth().oauth2(token)
+                .get(PROFILE)
+                .then().statusCode(404);
+    }
+
+    @Test
+    void createRejectsAnEmptyClubListAndUnknownClubs() {
+        final var token = TestRealm.newPerson("member").token();
+
+        given()
+                .auth().oauth2(token)
+                .contentType("application/json").body(createBody())
+                .post(PROFILE)
+                .then().statusCode(400);
+
+        given()
+                .auth().oauth2(token)
+                .contentType("application/json").body(createBody(CLUB_A, UUID.randomUUID()))
+                .post(PROFILE)
+                .then().statusCode(404);
+
+        given()
+                .auth().oauth2(token)
+                .get(PROFILE)
+                .then().statusCode(404);
+    }
+
     private static Map<String, Object> createBody(UUID... clubIds) {
         final var body = new HashMap<>(profileBody());
         body.put("clubIds", Arrays.stream(clubIds).map(UUID::toString).toList());
