@@ -169,10 +169,16 @@ public class MemberServiceImpl implements MemberService {
         });
     }
 
+    /**
+     * Flushes the new Member, so a Member stored meanwhile with the same id or email fails here, inside the caller's
+     * chain, as an {@link AlreadyExistsException}, and not at commit.
+     */
     private Uni<Member> persist(UUID id, MemberEntity entity, Set<ClubEntity> clubs) {
         entity.setId(id);
         entity.setClubs(clubs);
-        return repository.persist(entity).map(mapper::map);
+        return repository.persistAndFlush(entity)
+                .onFailure().transform(failure -> MemberConstraints.alreadyExists(failure, entity))
+                .map(mapper::map);
     }
 
     /**

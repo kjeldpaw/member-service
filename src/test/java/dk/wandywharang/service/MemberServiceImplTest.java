@@ -107,7 +107,7 @@ class MemberServiceImplTest {
         when(registerService.register(request)).thenReturn(Uni.createFrom().item(userId.toString()));
         when(clubRepository.findByIds(Set.of(club.getId()))).thenReturn(Uni.createFrom().item(Set.of(club)));
         when(mapper.map(request)).thenReturn(entity);
-        when(repository.persist(any(MemberEntity.class))).thenAnswer(invocation -> Uni.createFrom().item(invocation.<MemberEntity>getArgument(0)));
+        when(repository.persistAndFlush(any(MemberEntity.class))).thenAnswer(invocation -> Uni.createFrom().item(invocation.<MemberEntity>getArgument(0)));
         when(registerService.sendSetupEmail(userId.toString())).thenReturn(Uni.createFrom().voidItem());
 
         final var result = service.create(request).await().indefinitely();
@@ -148,7 +148,7 @@ class MemberServiceImplTest {
         when(clubRepository.findByIds(Set.of(club.getId()))).thenReturn(Uni.createFrom().item(Set.of(club)));
         when(registerService.register(request)).thenReturn(Uni.createFrom().item(userId));
         when(mapper.map(request)).thenReturn(new MemberEntity());
-        when(repository.persist(any(MemberEntity.class))).thenReturn(Uni.createFrom().failure(new IllegalStateException("Database down")));
+        when(repository.persistAndFlush(any(MemberEntity.class))).thenReturn(Uni.createFrom().failure(new IllegalStateException("Database down")));
         when(registerService.unregister(userId)).thenReturn(Uni.createFrom().voidItem());
 
         assertThrows(IllegalStateException.class, () -> service.create(request).await().indefinitely());
@@ -164,7 +164,7 @@ class MemberServiceImplTest {
         when(clubRepository.findByIds(Set.of(club.getId()))).thenReturn(Uni.createFrom().item(Set.of(club)));
         when(registerService.register(request)).thenReturn(Uni.createFrom().item(userId));
         when(mapper.map(request)).thenReturn(new MemberEntity());
-        when(repository.persist(any(MemberEntity.class))).thenReturn(Uni.createFrom().failure(new IllegalStateException("Database down")));
+        when(repository.persistAndFlush(any(MemberEntity.class))).thenReturn(Uni.createFrom().failure(new IllegalStateException("Database down")));
         when(registerService.unregister(userId)).thenReturn(Uni.createFrom().failure(new RegisterException(500, "Keycloak down")));
 
         assertThrows(IllegalStateException.class, () -> service.create(request).await().indefinitely());
@@ -188,7 +188,7 @@ class MemberServiceImplTest {
         when(registerService.register(request)).thenReturn(Uni.createFrom().item(userId));
         when(clubRepository.findByIds(Set.of(club.getId()))).thenReturn(Uni.createFrom().item(Set.of(club)));
         when(mapper.map(request)).thenReturn(new MemberEntity());
-        when(repository.persist(any(MemberEntity.class))).thenAnswer(invocation -> Uni.createFrom().item(invocation.<MemberEntity>getArgument(0)));
+        when(repository.persistAndFlush(any(MemberEntity.class))).thenAnswer(invocation -> Uni.createFrom().item(invocation.<MemberEntity>getArgument(0)));
         when(registerService.sendSetupEmail(userId)).thenReturn(Uni.createFrom().failure(new RuntimeException("No SMTP server")));
 
         assertSame(dto, service.create(request).await().indefinitely());

@@ -11,12 +11,17 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static dk.wandywharang.it.TestRealm.CLUB_A;
 import static dk.wandywharang.it.TestRealm.CLUB_B;
@@ -24,6 +29,7 @@ import static dk.wandywharang.it.TestRealm.CLUB_C;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * The logged-in person's own Member record, their Profile, over HTTP, against real Postgres and Keycloak. See
@@ -195,6 +201,46 @@ class ProfileIT {
                 .auth().oauth2(token)
                 .get(PROFILE)
                 .then().statusCode(404);
+    }
+
+    /**
+     * Requests sent at the same moment can all pass the check for an existing Member before any of them is stored, so
+     * the database's constraints are what refuse all but one of them.
+     */
+    @Test
+    void concurrentCreatesStoreOneProfileAndTheRestAreConflicts() throws Exception {
+        final var person = TestRealm.newPerson("member");
+        final var token = person.token();
+        final var requests = 8;
+        final var start = new CountDownLatch(1);
+        final var executor = Executors.newFixedThreadPool(requests);
+        try {
+            final var statuses = new ArrayList<Future<Integer>>();
+            for (var i = 0; i < requests; i++) {
+                statuses.add(executor.submit(() -> {
+                    start.await();
+                    return given()
+                            .auth().oauth2(token)
+                            .contentType("application/json").body(createBody(CLUB_A))
+                            .post(PROFILE)
+                            .statusCode();
+                }));
+            }
+            start.countDown();
+            final var counts = new HashMap<Integer, Integer>();
+            for (final var status : statuses) {
+                counts.merge(status.get(30, TimeUnit.SECONDS), 1, Integer::sum);
+            }
+            assertEquals(Map.of(201, 1, 409, requests - 1), counts);
+        } finally {
+            executor.shutdownNow();
+        }
+
+        given()
+                .auth().oauth2(token)
+                .get(PROFILE)
+                .then().statusCode(200)
+                .body("id", equalTo(person.id().toString()));
     }
 
     @Test
