@@ -14,6 +14,11 @@ public interface MemberService {
 
     Uni<Member> findById(UUID id);
 
+    /**
+     * The current user's own Member record, their Profile.
+     */
+    Uni<Member> findProfile();
+
     Uni<Member> create(CreateMemberRequest request);
 
     Uni<Member> update(UUID id, UpdateMemberRequest request);

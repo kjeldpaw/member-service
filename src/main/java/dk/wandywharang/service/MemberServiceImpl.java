@@ -45,6 +45,14 @@ public class MemberServiceImpl implements MemberService {
                 .map(mapper::map);
     }
 
+    @WithSession
+    @Override
+    public Uni<Member> findProfile() {
+        return memberAccess.profile()
+                .chain(repository::fetchDetails)
+                .map(mapper::map);
+    }
+
     /**
      * Creates the Keycloak user first, so its id can be used as the member id. If persisting the member fails, the
      * Keycloak user is removed again on a best-effort basis, so the persist failure is what the caller sees. The setup
