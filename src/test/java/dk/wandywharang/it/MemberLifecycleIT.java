@@ -244,7 +244,7 @@ class MemberLifecycleIT {
                 "firstName", "Updated",
                 "lastName", "Lee",
                 "address", Map.of("street", "Main Street 1", "city", "Aarhus", "zipCode", "8000"),
-                "email", "kim@example.com");
+                "email", newEmail());
 
         given()
                 .auth().oauth2(instructorToken)
@@ -259,6 +259,34 @@ class MemberLifecycleIT {
                 .contentType("application/json").body(updateBody)
                 .put("/api/v1/members/{id}", sharesNone)
                 .then().statusCode(403);
+    }
+
+    @Test
+    void updatingAMemberWithAnotherMembersEmailKeepsTheirOwnSoNoEmailIsShared() throws SQLException {
+        final var member = TestDatabase.insertNewMember(dataSource, "Kim", "Lee", Set.of(clubId));
+        final var other = TestDatabase.insertNewMember(dataSource, "Sam", "Doe", Set.of(clubId));
+
+        given()
+                .auth().oauth2(TestRealm.ADMIN.token())
+                .contentType("application/json").body(updateBody("Updated", other + "@example.com"))
+                .put("/api/v1/members/{id}", member)
+                .then().statusCode(200)
+                .body("firstName", equalTo("Updated"))
+                .body("email", equalTo(member + "@example.com"));
+
+        given()
+                .auth().oauth2(TestRealm.ADMIN.token())
+                .get("/api/v1/members/{id}", member)
+                .then().statusCode(200)
+                .body("email", equalTo(member + "@example.com"));
+    }
+
+    private static Map<String, Object> updateBody(String firstName, String email) {
+        return Map.of(
+                "firstName", firstName,
+                "lastName", "Lee",
+                "address", Map.of("street", "Main Street 1", "city", "Aarhus", "zipCode", "8000"),
+                "email", email);
     }
 
     @Test
