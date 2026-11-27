@@ -1,24 +1,38 @@
 package dk.wandywharang.service;
 
 import dk.wandywharang.api.CreateMemberRequest;
+import dk.wandywharang.api.Role;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.WebApplicationException;
 import lombok.extern.jbosslog.JBossLog;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UsersResource;
+import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @JBossLog
 @ApplicationScoped
 public class RegisterServiceImpl implements RegisterService {
     private static final List<String> SETUP_ACTIONS = List.of("UPDATE_PASSWORD", "VERIFY_EMAIL");
+    /**
+     * The realm roles that the Role decides. {@code member} is left alone: every user has it.
+     */
+    private static final Set<String> ROLE_REALM_ROLES = Stream.of(Role.INSTRUCTOR, Role.ADMIN)
+            .map(Role::realmRole)
+            .collect(Collectors.toUnmodifiableSet());
 
     private final Keycloak keycloak;
     private final String realm;
@@ -48,6 +62,49 @@ public class RegisterServiceImpl implements RegisterService {
     }
 
     @Override
+    public Uni<Optional<Role>> role(String userId) {
+        return blocking(() -> {
+            try {
+                final var effective = users().get(userId).roles().realmLevel().listEffective();
+                return Optional.of(Role.highestOf(names(effective)));
+            } catch (WebApplicationException e) {
+                // The admin client reports an unknown user as a 404, not always as a NotFoundException
+                if (e.getResponse().getStatus() == 404) {
+                    return Optional.empty();
+                }
+                throw e;
+            }
+        });
+    }
+
+    /**
+     * Roles are added only when the user doesn't already hold them, directly or through a composite, and removed only
+     * when they are mapped directly. The roles to add come from the user's available realm roles, so the service
+     * account needs no right to view the realm's roles.
+     */
+    @Override
+    public Uni<Void> assignRole(String userId, Role role) {
+        return blocking(() -> {
+            final var realmLevel = users().get(userId).roles().realmLevel();
+            final var wanted = role.realmRoles();
+            final var held = names(realmLevel.listEffective());
+            final var toAdd = realmLevel.listAvailable().stream()
+                    .filter(available -> wanted.contains(available.getName()) && !held.contains(available.getName()))
+                    .toList();
+            final var toRemove = realmLevel.listAll().stream()
+                    .filter(direct -> ROLE_REALM_ROLES.contains(direct.getName()) && !wanted.contains(direct.getName()))
+                    .toList();
+            if (!toAdd.isEmpty()) {
+                realmLevel.add(toAdd);
+            }
+            if (!toRemove.isEmpty()) {
+                realmLevel.remove(toRemove);
+            }
+            return null;
+        });
+    }
+
+    @Override
     public Uni<Void> sendSetupEmail(String userId) {
         return blocking(() -> {
             users().get(userId).executeActionsEmail(SETUP_ACTIONS);
@@ -65,6 +122,10 @@ public class RegisterServiceImpl implements RegisterService {
             }
             return null;
         });
+    }
+
+    private static Set<String> names(Collection<RoleRepresentation> roles) {
+        return roles.stream().map(RoleRepresentation::getName).collect(Collectors.toSet());
     }
 
     private UsersResource users() {

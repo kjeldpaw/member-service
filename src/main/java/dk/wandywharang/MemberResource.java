@@ -8,6 +8,7 @@ import io.smallrye.mutiny.Uni;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import lombok.RequiredArgsConstructor;
@@ -55,6 +56,18 @@ public class MemberResource {
     @Path("{id}")
     public Uni<Member> update(@PathParam("id") UUID id, @Valid UpdateMemberRequest request) {
         return memberService.update(id, request);
+    }
+
+    /**
+     * Changes the Member's Role. Only Admins may do this, and not for themselves.
+     */
+    @PUT
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed("admin")
+    @Path("{id}/role")
+    public Uni<Member> updateRole(@PathParam("id") UUID id, @Valid @NotNull UpdateRoleRequest request) {
+        return memberService.updateRole(id, request.role());
     }
 
     @PUT

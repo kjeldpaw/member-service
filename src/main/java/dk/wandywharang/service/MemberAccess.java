@@ -1,5 +1,6 @@
 package dk.wandywharang.service;
 
+import dk.wandywharang.api.Role;
 import dk.wandywharang.entity.MemberEntity;
 import dk.wandywharang.repository.MemberRepository;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -23,8 +24,9 @@ import java.util.function.Supplier;
  * Loads Members on behalf of the current user. Admins can see and edit all Members. Instructors can see and edit the
  * Members who share at least one Club with them. A plain Member (neither Admin nor Instructor) can see only their own
  * Member record, and edit none through {@code /api/v1/members}; they edit their own Profile through
- * {@code /api/v1/profile} instead. A user's Clubs are the Clubs of their own Member record. A Member the user may not
- * see is reported as not found, so its existence is not revealed.
+ * {@code /api/v1/profile} instead. Only Admins see and change a Member's Role, and never their own. A user's Clubs
+ * are the Clubs of their own Member record. A Member the user may not see is reported as not found, so its existence
+ * is not revealed.
  */
 @RequestScoped
 @RequiredArgsConstructor
@@ -86,6 +88,37 @@ public class MemberAccess {
     public Uni<MemberEntity> findDeletable(UUID id) {
         if (level() != Level.ADMIN) {
             return Uni.createFrom().failure(new ForbiddenException("Only Admins may delete Members"));
+        }
+        return find(id);
+    }
+
+    /**
+     * Whether the current user is an Admin, who may see every Member's Role.
+     */
+    public boolean isAdmin() {
+        return level() == Level.ADMIN;
+    }
+
+    /**
+     * Fails unless the current user may give a new Member the Role: anyone who may create Members may give the lowest
+     * Role, and only Admins a higher one.
+     */
+    public Uni<Void> requireMayGiveRole(Role role) {
+        if (role != Role.MEMBER && level() != Level.ADMIN) {
+            return Uni.createFrom().failure(new ForbiddenException("Only Admins may give a Member a Role"));
+        }
+        return Uni.createFrom().voidItem();
+    }
+
+    /**
+     * Loads a Member whose Role the current user may change: only Admins may, and never their own.
+     */
+    public Uni<MemberEntity> findForRoleChange(UUID id) {
+        if (level() != Level.ADMIN) {
+            return Uni.createFrom().failure(new ForbiddenException("Only Admins may change a Member's Role"));
+        }
+        if (UUID.fromString(securityIdentity.getPrincipal().getName()).equals(id)) {
+            return Uni.createFrom().failure(new ForbiddenException("You may not change your own Role"));
         }
         return find(id);
     }

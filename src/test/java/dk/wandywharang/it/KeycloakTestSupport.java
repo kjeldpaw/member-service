@@ -5,13 +5,16 @@ import io.quarkus.arc.Arc;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static io.restassured.RestAssured.given;
 
@@ -75,8 +78,36 @@ public final class KeycloakTestSupport {
             }
             final var location = response.getLocation().getPath();
             final var id = location.substring(location.lastIndexOf('/') + 1);
-            realm.users().get(id).roles().realmLevel().add(List.of(realm.roles().get(role).toRepresentation()));
+            // Taken from the user's available roles, as the service account may not look up the realm's roles
+            final var realmLevel = realm.users().get(id).roles().realmLevel();
+            realmLevel.add(realmLevel.listAvailable().stream().filter(available -> available.getName().equals(role)).toList());
         }
+    }
+
+    /**
+     * The names of the user's effective realm roles, as Keycloak holds them.
+     */
+    public static Set<String> realmRolesOf(UUID userId) {
+        final var realm = ConfigProvider.getConfig().getValue("member-service.keycloak.realm", String.class);
+        return keycloak().realm(realm).users().get(userId.toString()).roles().realmLevel().listEffective().stream()
+                .map(RoleRepresentation::getName)
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * The realm roles that the token carries in its {@code realm_access} claim.
+     */
+    @SuppressWarnings("unchecked")
+    public static Set<String> realmRolesIn(String token) {
+        final var realmAccess = (Map<String, Object>) claimsOf(token).get("realm_access");
+        return Set.copyOf((List<String>) realmAccess.get("roles"));
+    }
+
+    /**
+     * The client the application's admin client gets its tokens as.
+     */
+    public static String adminClientId() {
+        return (String) claimsOf(keycloak().tokenManager().getAccessTokenString()).get("azp");
     }
 
     private static Keycloak keycloak() {
@@ -88,14 +119,17 @@ public final class KeycloakTestSupport {
      * principal name (see {@code quarkus.oidc.token.principal-claim=sub}) and therefore as the member id.
      */
     public static UUID subjectOf(String token) {
+        return UUID.fromString((String) claimsOf(token).get("sub"));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> claimsOf(String token) {
         final var payload = token.split("\\.")[1];
         final var json = new String(Base64.getUrlDecoder().decode(payload), StandardCharsets.UTF_8);
         try {
-            @SuppressWarnings("unchecked")
-            final var claims = MAPPER.readValue(json, Map.class);
-            return UUID.fromString((String) claims.get("sub"));
+            return MAPPER.readValue(json, Map.class);
         } catch (Exception e) {
-            throw new IllegalStateException("Could not parse token subject", e);
+            throw new IllegalStateException("Could not parse token claims", e);
         }
     }
 }

@@ -1,6 +1,7 @@
 package dk.wandywharang.service;
 
 import dk.wandywharang.TestData;
+import dk.wandywharang.api.Role;
 import dk.wandywharang.entity.MemberEntity;
 import dk.wandywharang.repository.MemberRepository;
 import io.quarkus.hibernate.reactive.panache.PanacheQuery;
@@ -23,8 +24,10 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
@@ -218,5 +221,66 @@ class MemberAccessTest {
         lenient().when(token.getName()).thenReturn(id.toString());
         lenient().when(token.<String>getClaim(Claims.email)).thenReturn(email);
         when(securityIdentity.getPrincipal()).thenReturn(token);
+    }
+
+    @Test
+    void anyoneWhoCreatesMembersMayGiveTheLowestRole() {
+        loggedInWith("member", "instructor");
+
+        access.requireMayGiveRole(Role.MEMBER).await().indefinitely();
+    }
+
+    @Test
+    void instructorMayNotGiveAHigherRole() {
+        loggedInWith("member", "instructor");
+
+        assertThrows(ForbiddenException.class, () -> access.requireMayGiveRole(Role.INSTRUCTOR).await().indefinitely());
+        assertThrows(ForbiddenException.class, () -> access.requireMayGiveRole(Role.ADMIN).await().indefinitely());
+    }
+
+    @Test
+    void adminMayGiveAnyRole() {
+        loggedInWith("admin");
+
+        for (final var role : Role.values()) {
+            access.requireMayGiveRole(role).await().indefinitely();
+        }
+    }
+
+    @Test
+    void adminCanChangeTheRoleOfAnyMember() {
+        loggedInWith("admin");
+
+        assertSame(otherClubMember, access.findForRoleChange(otherClubMember.getId()).await().indefinitely());
+    }
+
+    @Test
+    void adminCannotChangeTheirOwnRole() {
+        loggedInWith("admin");
+
+        assertThrows(ForbiddenException.class, () -> access.findForRoleChange(user.getId()).await().indefinitely());
+    }
+
+    @Test
+    void changingTheRoleOfAnUnknownMemberIsNotFound() {
+        loggedInWith("admin");
+
+        assertThrows(NotFoundException.class, () -> access.findForRoleChange(UUID.randomUUID()).await().indefinitely());
+    }
+
+    @Test
+    void instructorCannotChangeRoles() {
+        loggedInWith("member", "instructor");
+
+        assertThrows(ForbiddenException.class, () -> access.findForRoleChange(sameClubMember.getId()).await().indefinitely());
+    }
+
+    @Test
+    void onlyAnAdminIsAdmin() {
+        loggedInWith("member", "instructor");
+        assertFalse(access.isAdmin());
+
+        loggedInWith("admin");
+        assertTrue(access.isAdmin());
     }
 }

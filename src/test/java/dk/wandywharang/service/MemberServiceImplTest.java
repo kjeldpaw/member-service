@@ -4,6 +4,7 @@ import dk.wandywharang.TestData;
 import dk.wandywharang.api.Address;
 import dk.wandywharang.api.CreateMemberRequest;
 import dk.wandywharang.api.Member;
+import dk.wandywharang.api.Role;
 import dk.wandywharang.api.UpdateMemberRequest;
 import dk.wandywharang.entity.ClubEntity;
 import dk.wandywharang.entity.MemberEntity;
@@ -62,6 +63,7 @@ class MemberServiceImplTest {
         dto = TestData.member();
         lenient().when(repository.fetchDetails(any())).thenAnswer(invocation -> Uni.createFrom().item(invocation.<MemberEntity>getArgument(0)));
         lenient().when(mapper.map(any(MemberEntity.class))).thenReturn(dto);
+        lenient().when(memberAccess.requireMayGiveRole(any())).thenReturn(Uni.createFrom().voidItem());
     }
 
     private CreateMemberRequest createRequest() {
@@ -69,6 +71,10 @@ class MemberServiceImplTest {
     }
 
     private static CreateMemberRequest createRequest(Set<UUID> clubIds) {
+        return createRequest(clubIds, null);
+    }
+
+    private static CreateMemberRequest createRequest(Set<UUID> clubIds, Role role) {
         return CreateMemberRequest.builder()
                 .firstName("Kim")
                 .lastName("Lee")
@@ -77,7 +83,22 @@ class MemberServiceImplTest {
                 .email("kim@example.com")
                 .dateOfBirth(Optional.empty())
                 .clubIds(clubIds)
+                .role(role)
                 .build();
+    }
+
+    /**
+     * Stubs a create of the request that gets as far as storing the Member.
+     */
+    private String stubCreate(CreateMemberRequest request) {
+        final var userId = UUID.randomUUID().toString();
+        when(memberAccess.requireEditableClubs(request.clubIds())).thenReturn(Uni.createFrom().voidItem());
+        when(clubRepository.findByIds(request.clubIds())).thenReturn(Uni.createFrom().item(Set.of(club)));
+        when(registerService.register(request)).thenReturn(Uni.createFrom().item(userId));
+        lenient().when(mapper.map(request)).thenReturn(new MemberEntity());
+        lenient().when(repository.persistAndFlush(any(MemberEntity.class))).thenAnswer(invocation -> Uni.createFrom().item(invocation.<MemberEntity>getArgument(0)));
+        lenient().when(registerService.sendSetupEmail(userId)).thenReturn(Uni.createFrom().voidItem());
+        return userId;
     }
 
     @Test
@@ -236,5 +257,109 @@ class MemberServiceImplTest {
 
         assertThrows(ForbiddenException.class, () -> service.update(id, request).await().indefinitely());
         verify(mapper, never()).map(any(UpdateMemberRequest.class), any(MemberEntity.class));
+    }
+
+    @Test
+    void createWithoutRoleLeavesTheDefaultRolesAlone() {
+        final var request = createRequest();
+        stubCreate(request);
+
+        assertEquals(Role.MEMBER, request.role());
+        service.create(request).await().indefinitely();
+
+        verify(registerService, never()).assignRole(anyString(), any());
+    }
+
+    @Test
+    void adminCreatesMemberWithRoleAndGetsTheRoleBack() {
+        final var request = createRequest(Set.of(club.getId()), Role.INSTRUCTOR);
+        final var userId = stubCreate(request);
+        when(registerService.assignRole(userId, Role.INSTRUCTOR)).thenReturn(Uni.createFrom().voidItem());
+        when(memberAccess.isAdmin()).thenReturn(true);
+
+        final var result = service.create(request).await().indefinitely();
+
+        assertEquals(Optional.of(Role.INSTRUCTOR), result.role());
+        verify(registerService).assignRole(userId, Role.INSTRUCTOR);
+    }
+
+    @Test
+    void instructorCreatesMemberWithoutGettingTheRoleBack() {
+        final var request = createRequest();
+        stubCreate(request);
+
+        assertEquals(Optional.empty(), service.create(request).await().indefinitely().role());
+    }
+
+    @Test
+    void createWithForbiddenRoleNeverReachesKeycloak() {
+        final var request = createRequest(Set.of(club.getId()), Role.ADMIN);
+        when(memberAccess.requireMayGiveRole(Role.ADMIN)).thenReturn(Uni.createFrom().failure(new ForbiddenException()));
+
+        assertThrows(ForbiddenException.class, () -> service.create(request).await().indefinitely());
+        verifyNoInteractions(registerService, clubRepository);
+    }
+
+    @Test
+    void createRemovesKeycloakUserWhenAssigningTheRoleFails() {
+        final var request = createRequest(Set.of(club.getId()), Role.ADMIN);
+        final var userId = stubCreate(request);
+        when(registerService.assignRole(userId, Role.ADMIN)).thenReturn(Uni.createFrom().failure(new RegisterException(500, "Keycloak down")));
+        when(registerService.unregister(userId)).thenReturn(Uni.createFrom().voidItem());
+
+        assertThrows(RegisterException.class, () -> service.create(request).await().indefinitely());
+        verify(registerService).unregister(userId);
+        verify(repository, never()).persistAndFlush(any(MemberEntity.class));
+        verify(registerService, never()).sendSetupEmail(anyString());
+    }
+
+    @Test
+    void adminSeesTheRoleOfAMember() {
+        final var entity = TestData.member(club);
+        when(memberAccess.findVisible(entity.getId())).thenReturn(Uni.createFrom().item(entity));
+        when(memberAccess.isAdmin()).thenReturn(true);
+        when(registerService.role(dto.id().toString())).thenReturn(Uni.createFrom().item(Optional.of(Role.ADMIN)));
+
+        assertEquals(Optional.of(Role.ADMIN), service.findById(entity.getId()).await().indefinitely().role());
+    }
+
+    @Test
+    void adminSeesAMemberWithoutKeycloakUserWithoutRole() {
+        final var entity = TestData.member(club);
+        when(memberAccess.findVisible(entity.getId())).thenReturn(Uni.createFrom().item(entity));
+        when(memberAccess.isAdmin()).thenReturn(true);
+        when(registerService.role(dto.id().toString())).thenReturn(Uni.createFrom().item(Optional.empty()));
+
+        assertEquals(Optional.empty(), service.findById(entity.getId()).await().indefinitely().role());
+    }
+
+    @Test
+    void instructorDoesNotSeeTheRoleOfAMember() {
+        final var entity = TestData.member(club);
+        when(memberAccess.findVisible(entity.getId())).thenReturn(Uni.createFrom().item(entity));
+
+        assertEquals(Optional.empty(), service.findById(entity.getId()).await().indefinitely().role());
+        verify(registerService, never()).role(anyString());
+    }
+
+    @Test
+    void updateRoleAssignsItInKeycloakAndReturnsIt() {
+        final var entity = TestData.member(club);
+        when(memberAccess.findForRoleChange(entity.getId())).thenReturn(Uni.createFrom().item(entity));
+        when(registerService.assignRole(entity.getId().toString(), Role.INSTRUCTOR)).thenReturn(Uni.createFrom().voidItem());
+
+        final var result = service.updateRole(entity.getId(), Role.INSTRUCTOR).await().indefinitely();
+
+        assertEquals(Optional.of(Role.INSTRUCTOR), result.role());
+        verify(registerService).assignRole(entity.getId().toString(), Role.INSTRUCTOR);
+    }
+
+    @Test
+    void forbiddenRoleChangeNeverReachesKeycloak() {
+        final var id = UUID.randomUUID();
+        when(memberAccess.findForRoleChange(id)).thenReturn(Uni.createFrom().failure(new ForbiddenException()));
+
+        assertThrows(ForbiddenException.class, () -> service.updateRole(id, Role.ADMIN).await().indefinitely());
+        verifyNoInteractions(registerService);
     }
 }

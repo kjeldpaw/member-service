@@ -21,5 +21,8 @@ someone changes a role in the Keycloak console.
   only for Admins, on a single Member, and not on the Member list.
 - A changed Role takes effect at the person's next token refresh, not at
   once.
-- The member-service service account needs enough realm-management rights
-  to look up and map realm roles.
+- The service account's `manage-users`, `view-users` and `query-users` are
+  enough: member-service takes the roles to add from the user's available
+  realm roles, so it never needs to view the realm's roles. The integration
+  tests call Keycloak as that service account, so they would catch a missing
+  right.

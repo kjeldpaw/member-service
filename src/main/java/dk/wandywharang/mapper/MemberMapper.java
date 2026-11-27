@@ -16,6 +16,8 @@ import java.lang.annotation.RetentionPolicy;
 @Mapper(componentModel = "cdi", uses = {AddressMapper.class, ClubMapper.class, ReferenceMapper.class, GraduationMapper.class, OptionalMapper.class})
 public interface MemberMapper {
 
+    // Keycloak holds the Role, so the service adds it, and only for Admins
+    @Mapping(target = "role", ignore = true)
     Member map(MemberEntity member);
 
     @FromRequest

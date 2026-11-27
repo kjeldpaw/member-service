@@ -3,6 +3,7 @@ package dk.wandywharang.service;
 import dk.wandywharang.api.CreateMemberRequest;
 import dk.wandywharang.api.CreateProfileRequest;
 import dk.wandywharang.api.Member;
+import dk.wandywharang.api.Role;
 import dk.wandywharang.api.UpdateMemberRequest;
 import dk.wandywharang.api.UpdateProfileRequest;
 import io.smallrye.mutiny.Uni;
@@ -14,6 +15,9 @@ public interface MemberService {
 
     Uni<List<Member>> findAll();
 
+    /**
+     * The Member, with their Role if the current user is an Admin.
+     */
     Uni<Member> findById(UUID id);
 
     /**
@@ -33,9 +37,19 @@ public interface MemberService {
      */
     Uni<Member> createProfile(CreateProfileRequest request);
 
+    /**
+     * Creates the Member and their Keycloak user, with the requested Role. Only Admins may ask for a Role above
+     * {@link Role#MEMBER}, and only they get the Role back.
+     */
     Uni<Member> create(CreateMemberRequest request);
 
     Uni<Member> update(UUID id, UpdateMemberRequest request);
+
+    /**
+     * Changes the Member's Role in Keycloak. Only Admins may do this, and not for themselves. The new Role applies
+     * from the Member's next token.
+     */
+    Uni<Member> updateRole(UUID id, Role role);
 
     /**
      * Adds the Member to the Club, unless they already belong to it.
