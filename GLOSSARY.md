@@ -33,15 +33,27 @@ _Avoid_: Registration, ID
 ## Grading
 
 **Belt**:
-A Kup or Dan grade a Member can hold, from 10. Kup up to 3. Dan. Each Belt
-has a minimum time a Member holds it before grading to the next.
+A Mon, Kup, Poom or Dan grade a Member can hold. Each Belt has a minimum
+time a Member holds it before grading to the next.
 _Avoid_: Grade, rank
+
+**Poom**:
+The black-belt grade, 1. to 4. Poom, for a Member under 15 on the day of the
+Graduation; from 15 the next black belt is a Dan. A Member whose age is not
+known goes for a Dan.
+_Avoid_: Junior Dan
 
 **Graduation**:
 A Member's promotion to a Belt on a given date, examined by one or more
 Examiners. A Member's Graduations, latest first, form their Graduation
 history.
 _Avoid_: Grading, exam, promotion
+
+**Eligible**:
+A Member is Eligible for their next Belt on a given date when, by one
+calendar month after that date, they will have held their current Belt for
+at least its minimum time.
+_Avoid_: Qualified, ready, candidate
 
 **Examiner**:
 A Member who examined a Graduation.
