@@ -76,14 +76,7 @@ public class MemberServiceImpl implements MemberService {
                 .call(caller -> repository.findByEmail(caller.email())
                         .onItem().ifNotNull().failWith(() -> new AlreadyExistsException(caller.email())))
                 .chain(caller -> findClubs(request.clubIds())
-                        .chain(clubs -> {
-                            final var entity = mapper.map(request);
-                            entity.setId(caller.id());
-                            entity.setEmail(caller.email());
-                            entity.setClubs(clubs);
-                            return repository.persist(entity);
-                        }))
-                .map(mapper::map);
+                        .chain(clubs -> persist(caller.id(), mapper.map(request, caller.email()), clubs)));
     }
 
     /**
@@ -98,7 +91,7 @@ public class MemberServiceImpl implements MemberService {
         return memberAccess.requireEditableClubs(request.clubIds())
                 .chain(() -> findClubs(request.clubIds()))
                 .chain(clubs -> registerService.register(request)
-                        .chain(userId -> persist(UUID.fromString(userId), request, clubs)
+                        .chain(userId -> persist(UUID.fromString(userId), mapper.map(request), clubs)
                                 .onFailure().call(() -> registerService.unregister(userId)
                                         .onFailure().invoke(e -> log.warnf(e, "Could not remove Keycloak user %s", userId))
                                         .onFailure().recoverWithNull())
@@ -176,8 +169,7 @@ public class MemberServiceImpl implements MemberService {
         });
     }
 
-    private Uni<Member> persist(UUID id, CreateMemberRequest request, Set<ClubEntity> clubs) {
-        final var entity = mapper.map(request);
+    private Uni<Member> persist(UUID id, MemberEntity entity, Set<ClubEntity> clubs) {
         entity.setId(id);
         entity.setClubs(clubs);
         return repository.persist(entity).map(mapper::map);
