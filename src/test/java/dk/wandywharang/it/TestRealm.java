@@ -49,6 +49,16 @@ public final class TestRealm {
     }
 
     /**
+     * Creates a new person in the realm with the role and no Member record, so each test that gives them one starts
+     * from scratch.
+     */
+    public static Person newPerson(String role) {
+        final var person = new Person(MemberRequests.newEmail(), "secret", Set.of());
+        KeycloakTestSupport.createUser(person.username(), person.password(), role);
+        return person;
+    }
+
+    /**
      * A person who can log in to the test realm, with the Clubs of their Member record.
      */
     public record Person(String username, String password, Set<UUID> clubs) {

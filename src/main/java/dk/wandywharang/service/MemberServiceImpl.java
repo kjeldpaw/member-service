@@ -1,8 +1,10 @@
 package dk.wandywharang.service;
 
 import dk.wandywharang.api.CreateMemberRequest;
+import dk.wandywharang.api.CreateProfileRequest;
 import dk.wandywharang.api.Member;
 import dk.wandywharang.api.UpdateMemberRequest;
+import dk.wandywharang.api.UpdateProfileRequest;
 import dk.wandywharang.entity.ClubEntity;
 import dk.wandywharang.entity.MemberEntity;
 import dk.wandywharang.mapper.MemberMapper;
@@ -42,6 +44,52 @@ public class MemberServiceImpl implements MemberService {
     public Uni<Member> findById(UUID id) {
         return memberAccess.findVisible(id)
                 .chain(repository::fetchDetails)
+                .map(mapper::map);
+    }
+
+    @WithSession
+    @Override
+    public Uni<Member> findProfile() {
+        return memberAccess.profile()
+                .chain(repository::fetchDetails)
+                .map(mapper::map);
+    }
+
+    @WithTransaction
+    @Override
+    public Uni<Member> updateProfile(UpdateProfileRequest request) {
+        return memberAccess.profile()
+                .invoke(member -> mapper.map(request, member))
+                .chain(repository::fetchDetails)
+                .map(mapper::map);
+    }
+
+    /**
+     * The caller already has a Keycloak user, so none is created and no setup email is sent.
+     */
+    @WithTransaction
+    @Override
+    public Uni<Member> createProfile(UUID id, String email, CreateProfileRequest request) {
+        return repository.findById(id)
+                .invoke(existing -> {
+                    if (existing != null) {
+                        throw new AlreadyExistsException(id);
+                    }
+                })
+                .chain(() -> repository.existsByEmail(email))
+                .invoke(taken -> {
+                    if (taken) {
+                        throw new AlreadyExistsException(email);
+                    }
+                })
+                .chain(() -> findClubs(request.clubIds()))
+                .chain(clubs -> {
+                    final var entity = mapper.map(request);
+                    entity.setId(id);
+                    entity.setEmail(email);
+                    entity.setClubs(clubs);
+                    return repository.persist(entity);
+                })
                 .map(mapper::map);
     }
 

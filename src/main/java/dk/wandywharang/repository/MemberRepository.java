@@ -33,6 +33,13 @@ public class MemberRepository implements PanacheRepositoryBase<MemberEntity, UUI
     }
 
     /**
+     * Whether a Member has the email, ignoring case, as Keycloak does.
+     */
+    public Uni<Boolean> existsByEmail(String email) {
+        return count("lower(email) = ?1", email.toLowerCase()).map(count -> count > 0);
+    }
+
+    /**
      * Finds the Members of any Club whose first name, last name or full name contains the text, ignoring case,
      * ordered by last name and then first name, and at most the given number of them.
      */

@@ -1,8 +1,10 @@
 package dk.wandywharang.service;
 
 import dk.wandywharang.api.CreateMemberRequest;
+import dk.wandywharang.api.CreateProfileRequest;
 import dk.wandywharang.api.Member;
 import dk.wandywharang.api.UpdateMemberRequest;
+import dk.wandywharang.api.UpdateProfileRequest;
 import io.smallrye.mutiny.Uni;
 
 import java.util.List;
@@ -13,6 +15,23 @@ public interface MemberService {
     Uni<List<Member>> findAll();
 
     Uni<Member> findById(UUID id);
+
+    /**
+     * The current user's own Member record, their Profile.
+     */
+    Uni<Member> findProfile();
+
+    /**
+     * Updates the current user's Profile. Every role may do this, but it never changes the email or the Clubs.
+     */
+    Uni<Member> updateProfile(UpdateProfileRequest request);
+
+    /**
+     * Creates the Member record of a logged-in person who has none, with their Keycloak user id and email, in any
+     * Clubs. Fails with {@link AlreadyExistsException} if they already have a Member record or another Member has the
+     * email.
+     */
+    Uni<Member> createProfile(UUID id, String email, CreateProfileRequest request);
 
     Uni<Member> create(CreateMemberRequest request);
 
