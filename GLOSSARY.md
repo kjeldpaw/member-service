@@ -17,7 +17,8 @@ _Avoid_: Dojang, department
 **Member**:
 A person registered in Wandy Wha Rang who belongs to one or more Clubs.
 Not the same as the `member` login role, which any person who can log in has.
-_Avoid_: User, athlete
+A Member logs in with their email.
+_Avoid_: User, athlete, username, account
 
 **Profile**:
 The Member record of the person who is logged in, as they see it
