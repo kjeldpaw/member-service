@@ -3,6 +3,7 @@ package dk.wandywharang.service;
 import dk.wandywharang.api.CreateMemberRequest;
 import dk.wandywharang.api.CreateProfileRequest;
 import dk.wandywharang.api.Member;
+import dk.wandywharang.api.Role;
 import dk.wandywharang.api.UpdateMemberRequest;
 import dk.wandywharang.api.UpdateProfileRequest;
 import dk.wandywharang.entity.ClubEntity;
@@ -44,7 +45,8 @@ public class MemberServiceImpl implements MemberService {
     public Uni<Member> findById(UUID id) {
         return memberAccess.findVisible(id)
                 .chain(repository::fetchDetails)
-                .map(mapper::map);
+                .map(mapper::map)
+                .chain(this::withRoleForAdmin);
     }
 
     @WithSession
@@ -83,22 +85,26 @@ public class MemberServiceImpl implements MemberService {
     /**
      * Creates the Keycloak user first, so its id can be used as the member id. If persisting the member fails, the
      * Keycloak user is removed again on a best-effort basis, so the persist failure is what the caller sees. The setup
-     * email is only sent once the member is stored. The Clubs are checked and found before anything is created, so a
-     * forbidden request or an unknown Club never reaches Keycloak.
+     * email is only sent once the member is stored. The Role and the Clubs are checked and found before anything is
+     * created, so a forbidden request or an unknown Club never reaches Keycloak. A Role above {@link Role#MEMBER} is
+     * assigned before the member is stored, and a failure to assign it removes the Keycloak user in the same way.
      */
     @WithTransaction
     @Override
     public Uni<Member> create(CreateMemberRequest request) {
-        return memberAccess.requireEditableClubs(request.clubIds())
+        return memberAccess.requireMayGiveRole(request.role())
+                .chain(() -> memberAccess.requireEditableClubs(request.clubIds()))
                 .chain(() -> findClubs(request.clubIds()))
                 .chain(clubs -> registerService.register(request)
-                        .chain(userId -> persist(UUID.fromString(userId), mapper.map(request), clubs)
+                        .chain(userId -> assignRole(userId, request.role())
+                                .chain(() -> persist(UUID.fromString(userId), mapper.map(request), clubs))
                                 .onFailure().call(() -> registerService.unregister(userId)
                                         .onFailure().invoke(e -> log.warnf(e, "Could not remove Keycloak user %s", userId))
                                         .onFailure().recoverWithNull())
                                 .call(() -> registerService.sendSetupEmail(userId)
                                         .onFailure().invoke(e -> log.warnf(e, "Could not send setup email to Keycloak user %s", userId))
-                                        .onFailure().recoverWithNull())));
+                                        .onFailure().recoverWithNull())))
+                .map(member -> memberAccess.isAdmin() ? member.withRole(request.role()) : member);
     }
 
     @WithTransaction
@@ -108,6 +114,15 @@ public class MemberServiceImpl implements MemberService {
                 .invoke(member -> mapper.map(request, member))
                 .chain(repository::fetchDetails)
                 .map(mapper::map);
+    }
+
+    @WithSession
+    @Override
+    public Uni<Member> updateRole(UUID id, Role role) {
+        return memberAccess.findForRoleChange(id)
+                .call(member -> registerService.assignRole(member.getId().toString(), role))
+                .chain(repository::fetchDetails)
+                .map(member -> mapper.map(member).withRole(role));
     }
 
     /**
@@ -154,6 +169,25 @@ public class MemberServiceImpl implements MemberService {
         return memberAccess.findDeletable(id)
                 .call(repository::deleteWithDependents)
                 .chain(member -> registerService.unregister(member.getId().toString()));
+    }
+
+    /**
+     * A new Keycloak user already has the lowest Role through the realm's default roles.
+     */
+    private Uni<Void> assignRole(String userId, Role role) {
+        return role == Role.MEMBER ? Uni.createFrom().voidItem() : registerService.assignRole(userId, role);
+    }
+
+    /**
+     * Adds the Member's Role from Keycloak when the current user is an Admin. A Member whose Keycloak user is gone
+     * is shown without one.
+     */
+    private Uni<Member> withRoleForAdmin(Member member) {
+        if (!memberAccess.isAdmin()) {
+            return Uni.createFrom().item(member);
+        }
+        return registerService.role(member.id().toString())
+                .map(role -> role.map(member::withRole).orElse(member));
     }
 
     private Uni<ClubEntity> requireClub(UUID id) {

@@ -61,6 +61,17 @@ _Avoid_: Grader, graduatedBy
 
 ## Roles
 
+**Role**:
+What a Member may do: Plain Member, Instructor or Admin. A Member has
+exactly one Role, and each Role can do everything the Roles below it can.
+Only an Admin gives a Member a Role, and never to themselves.
+_Avoid_: Permission, access level
+
+**Plain Member**:
+A Member whose Role is neither Instructor nor Admin. They see and edit only
+their own Profile.
+_Avoid_: Member (for the Role), user
+
 **Admin**:
 A Member who manages all Clubs and Members, not just those of their own
 Clubs.

@@ -5,6 +5,7 @@ import dk.wandywharang.api.CreateGraduationRequest;
 import dk.wandywharang.api.CreateMemberRequest;
 import dk.wandywharang.api.CreateReferenceRequest;
 import dk.wandywharang.api.ReferenceType;
+import dk.wandywharang.api.Role;
 import dk.wandywharang.api.UpdateGraduationRequest;
 import dk.wandywharang.api.UpdateMemberRequest;
 import dk.wandywharang.api.UpdateReferenceRequest;
@@ -31,8 +32,11 @@ import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -285,5 +289,110 @@ class MemberResourceTest {
 
         given().delete("/{id}/graduation/{graduationId}", MEMBER_ID, CHILD_ID)
                 .then().statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void createPassesTheRequestedRole() {
+        final var member = TestData.member().withRole(Role.INSTRUCTOR);
+        when(memberService.create(any())).thenReturn(Uni.createFrom().item(member));
+        final var body = new HashMap<>(memberBody());
+        body.put("role", "instructor");
+
+        given().contentType("application/json").body(body).post()
+                .then().statusCode(201)
+                .body("role", equalTo("instructor"));
+        verify(memberService).create(argThat(request -> request.role() == Role.INSTRUCTOR));
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void createWithUnknownRoleIsBadRequest() {
+        final var body = new HashMap<>(memberBody());
+        body.put("role", "superuser");
+
+        given().contentType("application/json").body(body).post()
+                .then().statusCode(400);
+        verifyNoInteractions(memberService);
+    }
+
+    @Test
+    @TestSecurity(user = "instructor", roles = "instructor")
+    void memberWithoutRoleLeavesItOut() {
+        final var member = TestData.member();
+        when(memberService.findById(member.id())).thenReturn(Uni.createFrom().item(member));
+
+        given().get("/{id}", member.id())
+                .then().statusCode(200)
+                .body("$", not(hasKey("role")));
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void updateRoleReturnsMemberWithRole() {
+        final var member = TestData.member().withRole(Role.ADMIN);
+        when(memberService.updateRole(MEMBER_ID, Role.ADMIN)).thenReturn(Uni.createFrom().item(member));
+
+        given().contentType("application/json").body(Map.of("role", "admin")).put("/{id}/role", MEMBER_ID)
+                .then().statusCode(200)
+                .body("role", equalTo("admin"));
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void updateOfOwnRoleIsForbidden() {
+        when(memberService.updateRole(MEMBER_ID, Role.MEMBER)).thenReturn(Uni.createFrom().failure(new ForbiddenException()));
+
+        given().contentType("application/json").body(Map.of("role", "member")).put("/{id}/role", MEMBER_ID)
+                .then().statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void updateRoleOfUnknownMemberIsNotFound() {
+        when(memberService.updateRole(MEMBER_ID, Role.MEMBER)).thenReturn(Uni.createFrom().failure(new NotFoundException()));
+
+        given().contentType("application/json").body(Map.of("role", "member")).put("/{id}/role", MEMBER_ID)
+                .then().statusCode(404);
+    }
+
+    @Test
+    @TestSecurity(user = "instructor", roles = "instructor")
+    void updateRoleIsNotAllowedForInstructors() {
+        given().contentType("application/json").body(Map.of("role", "member")).put("/{id}/role", MEMBER_ID)
+                .then().statusCode(403);
+        verifyNoInteractions(memberService);
+    }
+
+    @Test
+    @TestSecurity(user = "member", roles = "member")
+    void updateRoleIsNotAllowedForMembers() {
+        given().contentType("application/json").body(Map.of("role", "member")).put("/{id}/role", MEMBER_ID)
+                .then().statusCode(403);
+        verifyNoInteractions(memberService);
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void updateRoleWithUnknownRoleIsBadRequest() {
+        given().contentType("application/json").body(Map.of("role", "superuser")).put("/{id}/role", MEMBER_ID)
+                .then().statusCode(400);
+        verifyNoInteractions(memberService);
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void updateRoleWithoutRoleIsBadRequest() {
+        given().contentType("application/json").body(Map.of()).put("/{id}/role", MEMBER_ID)
+                .then().statusCode(400);
+        verifyNoInteractions(memberService);
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void updateRoleWithoutBodyIsBadRequest() {
+        given().contentType("application/json").put("/{id}/role", MEMBER_ID)
+                .then().statusCode(400);
+        verifyNoInteractions(memberService);
     }
 }
