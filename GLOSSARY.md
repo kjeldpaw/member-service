@@ -17,8 +17,20 @@ _Avoid_: Dojang, department
 **Member**:
 A person registered in Wandy Wha Rang who belongs to one or more Clubs.
 Not the same as the `member` login role, which any person who can log in has.
-A Member logs in with their email.
-_Avoid_: User, athlete, username, account
+A Member may have a login, which is their email. A Member without a login,
+such as a child, has no email and is looked after by their Guardians.
+_Avoid_: User, athlete, username, account, submember
+
+**Guardian**:
+A Member who looks after another Member's record, such as a parent of a
+child who trains. A Member can have several Guardians and a Guardian can
+look after several Members. A Guardian sees and edits the Profile of each
+Member they look after as if it were their own, and can give a Member
+without a login their own login. A Guardian stays a Guardian, also once the
+Member has their own login, until an Instructor or Admin ends it. Only an
+Instructor or Admin makes a Member someone's Guardian, and the two need not
+share a Club.
+_Avoid_: Parent, family, household, submember
 
 **Profile**:
 The Member record of the person who is logged in, as they see it
@@ -63,14 +75,17 @@ _Avoid_: Grader, graduatedBy
 ## Roles
 
 **Role**:
-What a Member may do: Plain Member, Instructor or Admin. A Member has
-exactly one Role, and each Role can do everything the Roles below it can.
+What a Member may do: Plain Member, Instructor or Admin. A Member with a
+login has exactly one Role, and each Role can do everything the Roles below
+it can.
+A Member without a login has no Role; they become a Plain Member when they
+get one.
 Only an Admin gives a Member a Role, and never to themselves.
 _Avoid_: Permission, access level
 
 **Plain Member**:
 A Member whose Role is neither Instructor nor Admin. They see and edit only
-their own Profile.
+their own Profile and the Profiles of the Members they are Guardian of.
 _Avoid_: Member (for the Role), user
 
 **Admin**:
