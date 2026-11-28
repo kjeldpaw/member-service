@@ -3,6 +3,8 @@ package dk.wandywharang.service;
 import dk.wandywharang.api.Address;
 import dk.wandywharang.api.CreateMemberRequest;
 import dk.wandywharang.api.Role;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import org.junit.jupiter.api.BeforeEach;
@@ -113,7 +115,33 @@ class RegisterServiceImplTest {
         when(users.create(any())).thenReturn(response);
 
         final var failure = assertThrows(RegisterException.class, () -> service.register(request()).await().indefinitely());
-        assertEquals(403, failure.getResponse().getStatus());
+        assertEquals(403, failure.keycloakStatus());
+    }
+
+    @Test
+    void registerFailsWithKeycloakStatusWhenTheAdminClientThrows() {
+        when(users.create(any())).thenThrow(new NotAuthorizedException("Bearer"));
+
+        final var failure = assertThrows(RegisterException.class, () -> service.register(request()).await().indefinitely());
+        assertEquals(401, failure.keycloakStatus());
+    }
+
+    @Test
+    void assignRoleFailsWithKeycloakStatusWhenTheAdminClientThrows() {
+        final var userId = UUID.randomUUID().toString();
+        when(realmLevelOf(userId).listEffective()).thenThrow(new WebApplicationException(403));
+
+        final var failure = assertThrows(RegisterException.class,
+                () -> service.assignRole(userId, Role.INSTRUCTOR).await().indefinitely());
+        assertEquals(403, failure.keycloakStatus());
+    }
+
+    @Test
+    void unreachableKeycloakFailsWithoutStatus() {
+        when(users.create(any())).thenThrow(new ProcessingException("Connection refused"));
+
+        final var failure = assertThrows(RegisterException.class, () -> service.register(request()).await().indefinitely());
+        assertEquals(0, failure.keycloakStatus());
     }
 
     @Test
@@ -158,7 +186,7 @@ class RegisterServiceImplTest {
         when(users.delete(userId)).thenReturn(response);
 
         final var failure = assertThrows(RegisterException.class, () -> service.unregister(userId).await().indefinitely());
-        assertEquals(500, failure.getResponse().getStatus());
+        assertEquals(500, failure.keycloakStatus());
         verify(response).close();
     }
 
@@ -217,7 +245,8 @@ class RegisterServiceImplTest {
         final var userId = UUID.randomUUID().toString();
         when(realmLevelOf(userId).listEffective()).thenThrow(new WebApplicationException(503));
 
-        assertThrows(WebApplicationException.class, () -> service.role(userId).await().indefinitely());
+        final var failure = assertThrows(RegisterException.class, () -> service.role(userId).await().indefinitely());
+        assertEquals(503, failure.keycloakStatus());
     }
 
     @Test

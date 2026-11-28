@@ -7,6 +7,7 @@ import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
 import lombok.extern.jbosslog.JBossLog;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -145,13 +146,17 @@ public class RegisterServiceImpl implements RegisterService {
 
     /**
      * The Keycloak admin client is blocking, so run it on a worker thread and emit the result back on the caller's
-     * Vert.x context, which Hibernate Reactive requires for any work chained after it.
+     * Vert.x context, which Hibernate Reactive requires for any work chained after it. A failure of the admin client
+     * itself becomes a {@link RegisterException}, so Keycloak's own status never reaches the caller as theirs.
      */
     private static <T> Uni<T> blocking(Supplier<T> supplier) {
         return Uni.createFrom().deferred(() -> {
             final Context context = Vertx.currentContext();
             final var uni = Uni.createFrom().item(supplier)
-                    .runSubscriptionOn(Infrastructure.getDefaultWorkerPool());
+                    .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
+                    .onFailure(WebApplicationException.class).transform(e -> new RegisterException(
+                            ((WebApplicationException) e).getResponse().getStatus(), e.getMessage(), e))
+                    .onFailure(ProcessingException.class).transform(e -> new RegisterException(0, e.getMessage(), e));
             return context == null ? uni : uni.emitOn(command -> context.runOnContext(ignored -> command.run()));
         });
     }
