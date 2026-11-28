@@ -13,6 +13,7 @@ import dk.wandywharang.service.AlreadyExistsException;
 import dk.wandywharang.service.GraduationService;
 import dk.wandywharang.service.MemberService;
 import dk.wandywharang.service.ReferenceService;
+import dk.wandywharang.service.RegisterException;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
@@ -127,6 +128,18 @@ class MemberResourceTest {
                 .dateOfBirth(Optional.empty())
                 .clubIds(Set.of(CLUB_ID))
                 .build());
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void createThatKeycloakRefusesIsBadGatewayNotUnauthorized() {
+        // A 401 from Keycloak's admin API is member-service's fault, not the caller's: passing it on would send
+        // the frontend to the login.
+        when(memberService.create(any())).thenReturn(Uni.createFrom().failure(new RegisterException(401, "HTTP 401 Unauthorized")));
+
+        given().contentType("application/json").body(memberBody()).post()
+                .then().statusCode(502)
+                .body("message", equalTo("Keycloak refused the request (401)"));
     }
 
     @Test
